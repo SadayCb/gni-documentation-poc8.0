@@ -12,56 +12,81 @@
 Creates, executes, and consolidates loan tranches.
 
 **Procedures**
-
+- [do_create_tranche](#do-create-tranche)
+- [create_tranche](#create-tranche)
+- [do_merge_tranche](#do-merge-tranche)
 
 ### [Payment schedules](#domain-payment-schedules)
 
 Creates, converts, and evaluates tranche-level repayment plans.
 
 **Procedures**
+- [do_payment_plan_creation](#do-payment-plan-creation)
+- [do_payment_plan_conversion](#do-payment-plan-conversion)
 
+**Functions**
+- [get_plan_payment_amount](#get-plan-payment-amount)
+- [get_Annuity_Amount](#get-annuity-amount)
 
 ### [Payments and allocation](#domain-payments-and-allocation)
 
 Allocates incoming funds and executes tranche-specific payments.
 
 **Procedures**
-
+- [distribute_payments_between_tranches](#distribute-payments-between-tranches)
+- [generate_allocated_payment_list](#generate-allocated-payment-list)
+- [do_tranche_operation](#do-tranche-operation)
 
 ### [Interest and penalties](#domain-interest-and-penalties)
 
 Calculates interest and derives penalty calculation inputs.
 
 **Procedures**
-
+- [do_int_calculation](#do-int-calculation)
+- [do_int_calculation_by_range](#do-int-calculation-by-range)
+- [get_pen_info_for_calc](#get-pen-info-for-calc)
 
 ### [Overdue and transit](#domain-overdue-and-transit)
 
 Classifies overdue positions and applies overdue/transit corrections.
 
 **Procedures**
+- [do_overdue_transit_operation](#do-overdue-transit-operation)
+- [ovd_amount_correction](#ovd-amount-correction)
 
+**Functions**
+- [get_ovd_trs_oper_type](#get-ovd-trs-oper-type)
 
 ### [Dates and loan lookup](#domain-dates-and-loan-lookup)
 
 Retrieves loans and calculates processing, payment, and overdue dates.
 
-**Procedures**
-
+**Functions**
+- [get_loan_info](#get-loan-info)
+- [calculate_date](#calculate-date)
+- [get_ovd_date](#get-ovd-date)
+- [get_Pym_Startdate](#get-pym-startdate)
 
 ### [History and reversal](#domain-history-and-reversal)
 
 Records tranche movements and restores transaction-related state.
 
 **Procedures**
-
+- [create_tranche_history](#create-tranche-history)
+- [table_log_operation](#table-log-operation)
+- [delete_tranche](#delete-tranche)
+- [do_delete_operation](#do-delete-operation)
 
 ### [Integration and validation](#domain-integration-and-validation)
 
 Exposes APEX data and validates tranche repayment-plan consistency.
 
 **Procedures**
+- [do_plan_control](#do-plan-control)
 
+**Functions**
+- [apex_krd2204_2_view](#apex-krd2204-2-view)
+- [get_plan_error](#get-plan-error)
 
 ---
 
