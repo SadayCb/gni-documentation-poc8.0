@@ -23,24 +23,6 @@ A central documentation portal for GNI Software's banking platform. Explore a bu
 | **Securities Management** | Securities processing | [Open module](docs/modules/securities-management.md) |
 | **End-of-Day & Start-of-Day Processing** | Daily opening and closing operations | [Open module](docs/modules/eod-sod-processing.md) |
 
-## Documentation structure
-
-```text
-GNI Software Documentation
-└── Business / technical module
-    └── Package
-        ├── Overview
-        ├── API Reference
-        ├── Workflows
-        ├── Data Model
-        ├── Dependencies
-        └── Error Handling
-```
-
-The **[Loan Management](docs/modules/loan-management.md)** module currently contains three documented packages: `GAIA.LOAN_API`, `GAIA.LOAN_TRANCHE_API`, and `GAIA.LOAN_CATEGORY_API`. Other module pages are prepared for future packages; their content is not presented as already documented.
-
-[Documentation home](docs/index.md) · [Loan Management](docs/modules/loan-management.md)
-
 ---
 
 *GNI Software · Source-backed technical documentation*
