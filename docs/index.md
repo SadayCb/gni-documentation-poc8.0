@@ -27,6 +27,5 @@ Explore GNI Software's banking modules and their documented packages. Each packa
 
 **Module → Package → Documentation section.** Start with a module from the directory above, choose its package, then open the relevant API Reference, Workflows, Data Model, Dependencies or Error Handling page.
 
-The [Loan Management](modules/loan-management.md) module contains the three currently documented packages. Other modules have dedicated landing pages and will be populated as their package documentation is prepared.
 
 *Source-based reference: physical database constraints and environment-dependent runtime details require separate verification.*
