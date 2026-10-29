@@ -44,14 +44,6 @@ flowchart LR
 
 *Conceptual map of source-observed integrations; arrows do not describe every runtime call or database constraint.*
 
-## How to use this documentation
-
-1. **New to a package?** Open its **Overview** for scope and functional areas.
-2. **Investigating a procedure or function?** Use **API Reference** for signature, parameters, and business-level execution logic.
-3. **Tracing data?** Open **Data Model** to identify principal objects and logical joins.
-4. **Reviewing integrations?** Consult **Dependencies** for shared services and configured operations.
-5. **Understanding execution or failures?** See **Workflows** and **Error Handling**.
-
 ## Documentation standards
 
 - **Public API first:** Document the published package specification; distinguish public methods from private helpers.
