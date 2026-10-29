@@ -1,5 +1,7 @@
 # LOAN_API | Package Overview
 
+[← Loan Management](./modules/loan-management.md)
+
 **Enterprise loan services · Oracle PL/SQL · Source-based technical reference**
 
 ---
