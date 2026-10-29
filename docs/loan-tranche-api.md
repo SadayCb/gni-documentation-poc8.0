@@ -2,7 +2,7 @@
 
 [← All packages](index.md)
 
-`GAIA.LOAN_TRANCHE_API` provides tranche-specific loan processing for credit products, including loan cards and overdrafts (as stated in the package header). It coordinates tranche opening and merging, repayment plans, payment allocation, calculation of interest and penalties, overdue/transit transitions, audit logging, and reversals. The interface reuses shared `GAIA.LOAN_API` record types and KRD2204 execution services.
+`GAIA.LOAN_TRANCHE_API` provides tranche-specific loan processing for credit products, including loan cards and overdrafts (as stated in the package header). It coordinates tranche opening and merging, repayment plans, payment allocation, calculation of interest and penalties, overdue/transit transitions, audit logging, and reversals.
 
 | Attribute | Value |
 |---|---|
