@@ -16,10 +16,10 @@
 
 | Page | Scope |
 |---|---|
-| [API Reference](loan-category-api-reference.md) | All public routines, grouped by business responsibility |
 | [Workflows](loan-category-workflows.md) | Primary category, court-decision and closure processing paths |
 | [Data Model](loan-category-data-model.md) | Principal source-visible objects and logical relationships |
 | [Dependencies](loan-category-dependencies.md) | Banking packages, transaction services and IBS data integration |
+| [API Reference](loan-category-api-reference.md) | All public routines, grouped by business responsibility |
 | [Error Handling](loan-category-error-handling.md) | Key validation and processing outcomes |
 
 ## Functional areas
