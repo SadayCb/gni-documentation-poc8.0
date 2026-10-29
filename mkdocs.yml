@@ -6,7 +6,29 @@ nav:
   - Modules:
       - "System Administration": modules/system-administration.md
       - "Customer Onboarding": modules/customer-onboarding.md
-      - "Loan Management": modules/loan-management.md
+      - "Loan Management":
+          - Module Overview: modules/loan-management.md
+        - LOAN_API:
+              - Overview: loan-api.md
+              - API Reference: api.md
+              - Workflows: workflows.md
+              - Data Model: data-model.md
+              - Dependencies: dependencies.md
+              - Error Handling: error-handling.md
+          - LOAN_TRANCHE_API:
+              - Overview: loan-tranche-api.md
+              - API Reference: loan-tranche-api-reference.md
+              - Workflows: loan-tranche-workflows.md
+              - Data Model: loan-tranche-data-model.md
+              - Dependencies: loan-tranche-dependencies.md
+              - Error Handling: loan-tranche-error-handling.md
+          - LOAN_CATEGORY_API:
+              - Overview: loan-category-api.md
+              - API Reference: loan-category-api-reference.md
+              - Workflows: loan-category-workflows.md
+              - Data Model: loan-category-data-model.md
+              - Dependencies: loan-category-dependencies.md
+              - Error Handling: loan-category-error-handling.md
       - "Anti-Money Laundering (AML)": modules/anti-money-laundering.md
       - "Credit Scoring": modules/credit-scoring.md
       - "Fraud Detection & Prevention": modules/fraud-detection-prevention.md
@@ -18,28 +40,7 @@ nav:
       - "Fixed Assets Management": modules/fixed-assets-management.md
       - "Securities Management": modules/securities-management.md
       - "End-of-Day & Start-of-Day Processing": modules/eod-sod-processing.md
-  - LOAN_API:
-      - Overview: loan-api.md
-      - API Reference: api.md
-      - Workflows: workflows.md
-      - Data Model: data-model.md
-      - Dependencies: dependencies.md
-      - Error Handling: error-handling.md
-  - LOAN_TRANCHE_API:
-      - Overview: loan-tranche-api.md
-      - API Reference: loan-tranche-api-reference.md
-      - Workflows: loan-tranche-workflows.md
-      - Data Model: loan-tranche-data-model.md
-      - Dependencies: loan-tranche-dependencies.md
-      - Error Handling: loan-tranche-error-handling.md
-  - LOAN_CATEGORY_API:
-      - Overview: loan-category-api.md
-      - API Reference: loan-category-api-reference.md
-      - Workflows: loan-category-workflows.md
-      - Data Model: loan-category-data-model.md
-      - Dependencies: loan-category-dependencies.md
-      - Error Handling: loan-category-error-handling.md
-theme:
+  theme:
   name: material
 markdown_extensions:
   - tables
