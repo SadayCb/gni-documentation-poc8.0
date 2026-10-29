@@ -4,8 +4,6 @@
 
 A single entry point for understanding the public APIs and business processes of GNI's shared loan packages. Start with a package overview, then follow its API Reference, workflow diagrams, data relationships, dependencies and validations.
 
-> The documentation describes source-observed behavior. Physical schema constraints and deployed runtime behavior require environment-specific verification.
-
 ## Package directory
 
 | Package | What it covers | Get started |
