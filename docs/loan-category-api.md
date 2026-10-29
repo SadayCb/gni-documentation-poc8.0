@@ -28,9 +28,9 @@
 |---|---|---:|---|
 | **Category orchestration and classification** | Runs configured category jobs and maintains loan category states | 3 | [View](loan-category-api-reference.md#domain-category-orchestration-and-classification) |
 | **Court decisions and accounting** | Applies court decisions and constructs related accounting entries | 3 | [View](loan-category-api-reference.md#domain-court-decisions-and-accounting) |
-| **Charge-off and loan closure** | Evaluates charge-off status and executes configured closure flows | 3 | [View](loan-category-api-reference.md#domain-charge-off-and-loan-closure) |
+| **Charge-off and loan closure** | Executes configured loan closure flows | 2 | [View](loan-category-api-reference.md#domain-charge-off-and-loan-closure) |
 | **Payment collection and legacy IBS** | Collects payments and checks historical IBS payment information | 4 | [View](loan-category-api-reference.md#domain-payment-collection-and-legacy-ibs) |
-| **Overdraft and portfolio lookup** | Checks guarantee loan type and requests overdraft closure | 1 | [View](loan-category-api-reference.md#domain-overdraft-and-portfolio-lookup) |
+| **Overdraft and portfolio lookup** | Checks guarantee loan type and requests overdraft closure | 2 | [View](loan-category-api-reference.md#domain-overdraft-and-portfolio-lookup) |
 
 **Classification note:** these are documentation domains rather than physically separate PL/SQL modules.
 
