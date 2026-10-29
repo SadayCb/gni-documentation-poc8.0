@@ -49,12 +49,4 @@ flowchart LR
   L --> D
 ```
 
-## Initial source-review notes
-
-- `run_loan_category` reads configured procedure names from `SP_LOAN_SUB_CATEGORY_PR` and invokes them using dynamic PL/SQL. The configuration is part of the operational workflow.
-- `apply_court_decision` filters pending entries in `LOAN_COURT_DECISION_LIST`, compares court-decision amounts with loan balances and adjusts for payments found in IBS and loan history. This long procedure needs a dedicated step-by-step Description.
-- `set_charge_off_status` and automatic closure flows use configurable query/parameter tables rather than one fixed hard-coded loan filter.
-- `set_category_close_date` is a body-private procedure, **not** a public declaration.
-- The source exposes `LOAN_API.G_ENTRIES_LIST_TAB` in a public output parameter: callers share a cross-package collection type.
-
 For detailed conditions and data updates, refer to the evolving [API Reference](loan-category-api-reference.md).
