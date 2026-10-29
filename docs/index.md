@@ -20,12 +20,4 @@ The loan module exposes reusable PL/SQL services to support banking loan process
 
 Each package is documented individually using a consistent structure: **Overview, API Reference, Data Model, Dependencies, Error Handling, and Workflows**. SQL queries, cursor behavior, configuration lookups, and database effects are described according to the supplied code rather than inferred from method names.
 
-### Current coverage
-
-- **LOAN_API:** Existing v7 documentation retained, including its 89 public declarations, API reference, data model, dependencies, error handling, and workflow diagrams.
-- **LOAN_TRANCHE_API:** Documentation pending source package specification and body.
-- **LOAN_CATEGORY_API:** Documentation pending source package specification and body.
-
----
-
-**GNI Software — Loan Packages Documentation** · [LOAN_API overview](loan-api.md)
+**GNI Software — Loan Packages Documentation**
