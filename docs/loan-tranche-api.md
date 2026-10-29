@@ -1,18 +1,55 @@
-# LOAN_TRANCHE_API
+# LOAN_TRANCHE_API — Overview
 
-[← All loan packages](index.md)
+[← All packages](index.md)
 
-## Overview
+`GAIA.LOAN_TRANCHE_API` provides tranche-specific loan processing for credit products, including loan cards and overdrafts (as stated in the package header). It coordinates tranche opening and merging, repayment plans, payment allocation, calculation of interest and penalties, overdue/transit transitions, audit logging, and reversals. The interface reuses shared `GAIA.LOAN_API` record types and KRD2204 execution services.
 
-This page is reserved for the loan tranche package. Its precise responsibilities, signatures, SQL/cursor logic, dependencies, and business rules will be documented after the package specification and body are provided.
+| Attribute | Value |
+|---|---|
+| Package | `GAIA.LOAN_TRANCHE_API` |
+| Source | Supplied package specification and body |
+| Public methods | **27: 18 procedures, 9 functions** |
+| Implementation | 6,493-line body (includes private helpers) |
+| Review status | Source-backed draft; confirm deployed code before release |
 
-**Status:** Pending source review.
+## Documentation
 
-## Planned documentation
+| Page | Description |
+|---|---|
+| [API Reference](loan-tranche-api-reference.md) | Every public signature, implementation summary, data access, validations, source location |
+| [Workflows](loan-tranche-workflows.md) | Visual tranche lifecycle, payments, interest and recovery |
+| [Data Model](loan-tranche-data-model.md) | Tranche/plan/history/configuration tables and relationships |
+| [Dependencies](loan-tranche-dependencies.md) | Shared APIs, KRD2204, product and account configuration |
+| [Error Handling](loan-tranche-error-handling.md) | Common business validations and operational caveats |
 
-- Public API reference and parameter descriptions
-- Business logic and database effects
-- Data model and dependencies
-- Error handling and workflow diagrams
+## Functional map
 
-No unverified method names or behavior are asserted here.
+- **Lifecycle:** `do_create_tranche`, `create_tranche`, `do_merge_tranche`.
+- **Payment schedules:** `do_payment_plan_creation`, `do_payment_plan_conversion`, `get_plan_payment_amount`, `get_Annuity_Amount`.
+- **Payments and allocation:** `generate_allocated_payment_list`, `distribute_payments_between_tranches`, `do_tranche_operation`.
+- **Interest and overdue:** `do_int_calculation`, `do_int_calculation_by_range`, `get_pen_info_for_calc`, `get_ovd_trs_oper_type`, `do_overdue_transit_operation`, `ovd_amount_correction`.
+- **Date and lookup utilities:** `get_loan_info`, `calculate_date`, `get_ovd_date`, `get_Pym_Startdate`.
+- **Audit and reversal:** `create_tranche_history`, `table_log_operation`, `delete_tranche`, `do_delete_operation`.
+- **Integration and integrity:** `apex_krd2204_2_view`, `get_plan_error`, `do_plan_control`.
+
+## Architecture
+
+```mermaid
+flowchart TD
+  A[APEX and services] --> T[LOAN_TRANCHE_API]
+  T --> L[Tranche creation and merge]
+  T --> P[Plans and payment allocation]
+  T --> C[Interest and overdue movements]
+  T --> R[History and validation]
+  T --> X[LOAN_API and KRD2204 APIs]
+  L --> D[(Tranche master and schedules)]
+  P --> D
+  C --> D
+  R --> D
+```
+
+## Technical review findings
+
+- The supplied body appears to declare `l_loan_tranche_list` twice inside `do_create_tranche` (lines 976–977). Confirm compilation in the actual schema; no source code was altered.
+- `prepare_loans_for_ovd_trs`, `update_payment_plan`, `pen_main_correction`, `apex_krd2204_2_pivot_view`, and `get_loan_sche_info` are private to the body rather than public API declarations.
+- Account-type and schedule processing relies on configuration and on shared `LOAN_API`; workflows should not be treated as a standalone transaction guarantee.
