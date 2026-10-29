@@ -4,7 +4,7 @@
 
 ## Scope
 
-This document maps **named package and service dependencies** used by `GAIA.LOAN_TRANCHE_API` and explains why they matter to tranche processing. Its scope includes the 27 public declarations and source-visible supporting private routines. It follows the structure of the [LOAN_API dependency register](dependencies.md) while keeping the two packages' dependencies distinct.
+This document maps **named package and service dependencies** used by `GAIA.LOAN_TRANCHE_API` and explains why they matter to tranche processing. Its scope includes the 27 public declarations and source-visible supporting private routines.
 
 **Evidence level:** entries represent source-visible qualified references or documented integration points. Links indicate representative public entry points, not a claim that every call is direct or unconditional. Source inspection alone cannot establish deployed grants, synonyms, object validity, transitive dependencies, or transaction ownership.
 
