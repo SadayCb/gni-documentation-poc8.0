@@ -16,10 +16,10 @@
 
 | Page | Description |
 |---|---|
-| [API Reference](loan-tranche-api-reference.md) | Every public signature, implementation summary, data access, validations, source location |
 | [Workflows](loan-tranche-workflows.md) | Visual tranche lifecycle, payments, interest and recovery |
 | [Data Model](loan-tranche-data-model.md) | Tranche/plan/history/configuration tables and relationships |
 | [Dependencies](loan-tranche-dependencies.md) | Shared APIs, KRD2204, product and account configuration |
+| [API Reference](loan-tranche-api-reference.md) | Every public signature, implementation summary, data access, validations, source location |
 | [Error Handling](loan-tranche-error-handling.md) | Common business validations and operational caveats |
 
 ## Functional areas
