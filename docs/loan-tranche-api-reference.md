@@ -126,7 +126,7 @@ procedure do_create_tranche(p_contract_no    varchar2 default null,
 | `p_tranche_amount` | IN | Requested tranche amount. |
 | `p_int_com_amount` | IN | Interest commission amount; may be derived for BY_RANGE loans. |
 | `p_trn_type` | IN | History change mode (I/U/D) or requested operation mode. |
-| `p_tx_fid` | IN OUT | Transaction identifier; IN OUT when a new identifier may be returned. |
+| `p_tx_fid` | IN OUT | Transaction identifier supplied by the caller or generated and returned to it. |
 
 **Dependencies:** [Dependency register](loan-tranche-dependencies.md).
 
@@ -161,12 +161,12 @@ procedure create_tranche(p_doc_no         in varchar2,
 
 | Parameter | Mode | Meaning |
 |---|---|---|
-| `p_doc_no` | IN | Loan document identifier; limits processing to the selected loan when supplied. |
+| `p_doc_no` | IN | Loan document number identifying the target loan. |
 | `p_tranche_type` | IN | Tranche type supplied for creation. |
 | `p_tracnhe_term` | IN | Tranche term supplied for creation (spelling follows package specification). |
 | `p_tranche_amount` | IN | Requested tranche amount. |
-| `p_int_amount` | IN | Supplied number parameter used by this operation. |
-| `p_tx_fid` | IN | Transaction identifier; IN OUT when a new identifier may be returned. |
+| `p_int_amount` | IN | Interest-related amount supplied when creating the tranche. |
+| `p_tx_fid` | IN | Transaction identifier used to associate the operation with its transaction history. |
 | `p_date` | IN | Effective processing date (default: logical system date where declared). |
 
 **Dependencies:** [Dependency register](loan-tranche-dependencies.md).
@@ -197,7 +197,7 @@ procedure do_merge_tranche(p_doc_no varchar2 default null,
 
 | Parameter | Mode | Meaning |
 |---|---|---|
-| `p_doc_no` | IN | Loan document identifier; limits processing to the selected loan when supplied. |
+| `p_doc_no` | IN | Loan document number identifying the target loan. |
 | `p_date` | IN | Effective processing date (default: logical system date where declared). |
 
 **Dependencies:** [Dependency register](loan-tranche-dependencies.md).
@@ -240,7 +240,7 @@ procedure do_payment_plan_creation(p_date   date default glbl.getsysdate,
 | `p_date` | IN | Effective processing date (default: logical system date where declared). |
 | `p_min_id` | IN | Lower branch/processing range boundary. |
 | `p_max_id` | IN | Upper branch/processing range boundary. |
-| `p_doc_no` | IN | Loan document identifier; limits processing to the selected loan when supplied. |
+| `p_doc_no` | IN | Loan document number identifying the target loan. |
 
 **Dependencies:** [Dependency register](loan-tranche-dependencies.md).
 
@@ -271,7 +271,7 @@ procedure do_payment_plan_conversion(p_date   date default glbl.getsysdate,
 | Parameter | Mode | Meaning |
 |---|---|---|
 | `p_date` | IN | Effective processing date (default: logical system date where declared). |
-| `p_doc_no` | IN | Loan document identifier; limits processing to the selected loan when supplied. |
+| `p_doc_no` | IN | Loan document number identifying the target loan. |
 
 **Dependencies:** [Dependency register](loan-tranche-dependencies.md).
 
@@ -304,7 +304,7 @@ function get_plan_payment_amount(p_doc_no     in varchar2,
 
 | Parameter | Mode | Meaning |
 |---|---|---|
-| `p_doc_no` | IN | Loan document identifier; limits processing to the selected loan when supplied. |
+| `p_doc_no` | IN | Loan document number identifying the target loan. |
 | `p_tranche_no` | IN | Tranche identifier to select or update. |
 | `p_date` | IN | Effective processing date (default: logical system date where declared). |
 | `p_acc_type` | IN | Account type filter or target account classification. |
@@ -339,7 +339,7 @@ Function get_Annuity_Amount(p_Doc_No      In Varchar2,
 
 | Parameter | Mode | Meaning |
 |---|---|---|
-| `p_Doc_No` | IN | Loan document identifier; limits processing to the selected loan when supplied. |
+| `p_Doc_No` | IN | Loan document number identifying the target loan. |
 | `p_tranche_no` | IN | Tranche identifier to select or update. |
 | `p_return_type` | IN | Controls annuity result selection (default NO_ZERO). |
 
@@ -380,7 +380,7 @@ procedure distribute_payments_between_tranches(p_doc_no       in varchar2,
 
 | Parameter | Mode | Meaning |
 |---|---|---|
-| `p_doc_no` | IN | Loan document identifier; limits processing to the selected loan when supplied. |
+| `p_doc_no` | IN | Loan document number identifying the target loan. |
 | `p_loan_status` | IN | Loan status governing processing rules. |
 | `p_payment_list` | IN | Payment account collection input. |
 | `p_final_list` | OUT | Output collection of tranche-assigned payment rows. |
@@ -418,7 +418,7 @@ procedure generate_allocated_payment_list(p_doc_no        in varchar2,
 
 | Parameter | Mode | Meaning |
 |---|---|---|
-| `p_doc_no` | IN | Loan document identifier; limits processing to the selected loan when supplied. |
+| `p_doc_no` | IN | Loan document number identifying the target loan. |
 | `p_tranche_no` | IN | Tranche identifier to select or update. |
 | `p_oper_type` | IN | Operation category or operation identifier. |
 | `p_loan_status` | IN | Loan status governing processing rules. |
@@ -464,8 +464,8 @@ procedure do_tranche_operation(p_oper_type           in varchar2,
 | Parameter | Mode | Meaning |
 |---|---|---|
 | `p_oper_type` | IN | Operation category or operation identifier. |
-| `p_tx_fid` | IN | Transaction identifier; IN OUT when a new identifier may be returned. |
-| `p_doc_no` | IN | Loan document identifier; limits processing to the selected loan when supplied. |
+| `p_tx_fid` | IN | Transaction identifier used to associate the operation with its transaction history. |
+| `p_doc_no` | IN | Loan document number identifying the target loan. |
 | `p_tranche_no` | IN | Tranche identifier to select or update. |
 | `p_trn_amount` | IN | Operation amount. |
 | `p_schedule_upd_type` | IN OUT | Schedule update type, which may be modified. |
@@ -516,7 +516,7 @@ procedure do_int_calculation(p_min_id     number default 0,
 |---|---|---|
 | `p_min_id` | IN | Lower branch/processing range boundary. |
 | `p_max_id` | IN | Upper branch/processing range boundary. |
-| `p_doc_no` | IN | Loan document identifier; limits processing to the selected loan when supplied. |
+| `p_doc_no` | IN | Loan document number identifying the target loan. |
 | `p_tranche_no` | IN | Tranche identifier to select or update. |
 | `p_eod_sod` | IN | End/start-of-day processing indicator. |
 | `p_date` | IN | Effective processing date (default: logical system date where declared). |
@@ -553,7 +553,7 @@ Procedure do_int_calculation_by_range(p_min_id number default null,
 |---|---|---|
 | `p_min_id` | IN | Lower branch/processing range boundary. |
 | `p_max_id` | IN | Upper branch/processing range boundary. |
-| `p_doc_no` | IN | Loan document identifier; limits processing to the selected loan when supplied. |
+| `p_doc_no` | IN | Loan document number identifying the target loan. |
 | `p_date` | IN | Effective processing date (default: logical system date where declared). |
 
 **Dependencies:** [Dependency register](loan-tranche-dependencies.md).
@@ -588,7 +588,7 @@ procedure get_pen_info_for_calc(p_date                   in date default glbl.ge
 | Parameter | Mode | Meaning |
 |---|---|---|
 | `p_date` | IN | Effective processing date (default: logical system date where declared). |
-| `p_doc_no` | IN | Loan document identifier; limits processing to the selected loan when supplied. |
+| `p_doc_no` | IN | Loan document number identifying the target loan. |
 | `p_tranche_no` | IN | Tranche identifier to select or update. |
 | `p_ovd_amount` | OUT | Returns overdue amount used for penalty calculation. |
 | `p_calculated_pen_day_cnt` | OUT | Returns calculated penalty day count. |
@@ -687,7 +687,7 @@ Procedure do_overdue_transit_operation(p_min_id     number default null,
 |---|---|---|
 | `p_min_id` | IN | Lower branch/processing range boundary. |
 | `p_max_id` | IN | Upper branch/processing range boundary. |
-| `p_doc_no` | IN | Loan document identifier; limits processing to the selected loan when supplied. |
+| `p_doc_no` | IN | Loan document number identifying the target loan. |
 | `p_tranche_no` | IN | Tranche identifier to select or update. |
 | `p_date` | IN | Effective processing date (default: logical system date where declared). |
 
@@ -721,7 +721,7 @@ procedure ovd_amount_correction(p_date          in date,
 | Parameter | Mode | Meaning |
 |---|---|---|
 | `p_date` | IN | Effective processing date (default: logical system date where declared). |
-| `p_doc_no` | IN | Loan document identifier; limits processing to the selected loan when supplied. |
+| `p_doc_no` | IN | Loan document number identifying the target loan. |
 | `p_caller_tx_fid` | IN | Originating transaction identifier for audit linkage. |
 
 **Dependencies:** [Dependency register](loan-tranche-dependencies.md).
@@ -759,7 +759,7 @@ function get_loan_info(p_doc_no in varchar2)
 
 | Parameter | Mode | Meaning |
 |---|---|---|
-| `p_doc_no` | IN | Loan document identifier; limits processing to the selected loan when supplied. |
+| `p_doc_no` | IN | Loan document number identifying the target loan. |
 
 **Dependencies:** [Dependency register](loan-tranche-dependencies.md).
 
@@ -830,7 +830,7 @@ Function get_ovd_date(p_doc_no   varchar2,
 
 | Parameter | Mode | Meaning |
 |---|---|---|
-| `p_doc_no` | IN | Loan document identifier; limits processing to the selected loan when supplied. |
+| `p_doc_no` | IN | Loan document number identifying the target loan. |
 | `p_acc_type` | IN | Account type filter or target account classification. |
 | `p_date` | IN | Effective processing date (default: logical system date where declared). |
 
@@ -869,7 +869,7 @@ Function get_Pym_Startdate(p_Doc_No          In Varchar2,
 
 | Parameter | Mode | Meaning |
 |---|---|---|
-| `p_Doc_No` | IN | Loan document identifier; limits processing to the selected loan when supplied. |
+| `p_Doc_No` | IN | Loan document number identifying the target loan. |
 | `p_tranche_no` | IN | Tranche identifier to select or update. |
 | `p_pymt_date` | IN | Supplied Date parameter used by this operation. |
 | `p_pymt_day` | IN | Configured payment day. |
@@ -932,15 +932,15 @@ procedure create_tranche_history(p_trn_date             in date,
 | Parameter | Mode | Meaning |
 |---|---|---|
 | `p_trn_date` | IN | Operation transaction date. |
-| `p_tx_fid` | IN | Transaction identifier; IN OUT when a new identifier may be returned. |
+| `p_tx_fid` | IN | Transaction identifier used to associate the operation with its transaction history. |
 | `p_oper_type` | IN | Operation category or operation identifier. |
-| `p_doc_no` | IN | Loan document identifier; limits processing to the selected loan when supplied. |
+| `p_doc_no` | IN | Loan document number identifying the target loan. |
 | `p_tranche_no` | IN | Tranche identifier to select or update. |
 | `p_trn_type` | IN | History change mode (I/U/D) or requested operation mode. |
 | `p_eod_sod` | IN | End/start-of-day processing indicator. |
 | `p_main_amount` | IN | Supplied number parameter used by this operation. |
 | `p_main_trs_amount` | IN | Supplied number parameter used by this operation. |
-| `p_int_amount` | IN | Supplied number parameter used by this operation. |
+| `p_int_amount` | IN | Interest-related amount supplied when creating the tranche. |
 | `p_int_trs_amount` | IN | Supplied number parameter used by this operation. |
 | `p_ovd_main_amount` | IN | Supplied number parameter used by this operation. |
 | `p_ovd_int_amount` | IN | Supplied number parameter used by this operation. |
@@ -983,10 +983,10 @@ procedure table_log_operation(p_doc_no     in varchar2,
 
 | Parameter | Mode | Meaning |
 |---|---|---|
-| `p_doc_no` | IN | Loan document identifier; limits processing to the selected loan when supplied. |
+| `p_doc_no` | IN | Loan document number identifying the target loan. |
 | `p_tranche_no` | IN | Tranche identifier to select or update. |
 | `p_table_name` | IN | Tranche table selected for logging or restoring. |
-| `p_tx_fid` | IN | Transaction identifier; IN OUT when a new identifier may be returned. |
+| `p_tx_fid` | IN | Transaction identifier used to associate the operation with its transaction history. |
 | `p_oper_type` | IN | Operation category or operation identifier. |
 
 **Dependencies:** [Dependency register](loan-tranche-dependencies.md).
@@ -1016,7 +1016,7 @@ procedure delete_tranche(p_tx_fid number);
 
 | Parameter | Mode | Meaning |
 |---|---|---|
-| `p_tx_fid` | IN | Transaction identifier; IN OUT when a new identifier may be returned. |
+| `p_tx_fid` | IN | Transaction identifier used to associate the operation with its transaction history. |
 
 **Dependencies:** [Dependency register](loan-tranche-dependencies.md).
 
@@ -1045,7 +1045,7 @@ procedure do_delete_operation(p_tx_fid number);
 
 | Parameter | Mode | Meaning |
 |---|---|---|
-| `p_tx_fid` | IN | Transaction identifier; IN OUT when a new identifier may be returned. |
+| `p_tx_fid` | IN | Transaction identifier used to associate the operation with its transaction history. |
 
 **Dependencies:** [Dependency register](loan-tranche-dependencies.md).
 
@@ -1112,7 +1112,7 @@ function get_plan_error(p_doc_no     varchar2,
 
 | Parameter | Mode | Meaning |
 |---|---|---|
-| `p_doc_no` | IN | Loan document identifier; limits processing to the selected loan when supplied. |
+| `p_doc_no` | IN | Loan document number identifying the target loan. |
 | `p_check_type` | IN | Controls the scope of repayment-plan validation (default ALL). |
 | `p_date` | IN | Effective processing date (default: logical system date where declared). |
 
