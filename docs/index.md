@@ -1,50 +1,32 @@
-# GNI Software — Loan Packages
+# GNI Software Documentation
 
-**Oracle PL/SQL · Banking loan services · Technical reference**
+**Banking modules · PL/SQL packages · Technical reference**
 
-A single entry point for understanding the public APIs and business processes of GNI's shared loan packages. Start with a package overview, then follow its API Reference, workflow diagrams, data relationships, dependencies and validations.
+Explore GNI Software's banking modules and their documented packages. Each package provides a structured view of its public interface, business logic, workflows, database objects, dependencies and error handling.
 
-## Package directory
+## Modules
 
-| Package | What it covers | Get started |
+| Module | Description | Documentation |
 |---|---|---|
-| **`GAIA.LOAN_API`** | Shared loan lifecycle, payment and interest logic, accounts, schedules, limits, accounting and audit | [Overview](loan-api.md) · [API](api.md) |
-| **`GAIA.LOAN_TRANCHE_API`** | Tranche creation and merging, allocations, schedules, overdue transitions, interest and reversal | [Overview](loan-tranche-api.md) · [API](loan-tranche-api-reference.md) |
-| **`GAIA.LOAN_CATEGORY_API`** | Category assignment, charge-off, legal decisions, closures, payment collection and legacy IBS checks | [Overview](loan-category-api.md) · [API](loan-category-api-reference.md) |
+| **System Administration** | Platform configuration and shared services | [Open module](modules/system-administration.md) |
+| **Customer Onboarding** | Customer registration and onboarding | [Open module](modules/customer-onboarding.md) |
+| **Loan Management** | Loans, tranches, categories and payments | [Open module](modules/loan-management.md) |
+| **Anti-Money Laundering (AML)** | Compliance and financial crime monitoring | [Open module](modules/anti-money-laundering.md) |
+| **Credit Scoring** | Credit risk assessment and scoring | [Open module](modules/credit-scoring.md) |
+| **Fraud Detection & Prevention** | Fraud controls and detection | [Open module](modules/fraud-detection-prevention.md) |
+| **Accounting & General Ledger** | Accounting and ledger processing | [Open module](modules/accounting-general-ledger.md) |
+| **Non-Performing Loans (NPL)** | Problem loan management | [Open module](modules/non-performing-loans.md) |
+| **Enterprise Resource Planning (ERP)** | Enterprise resources and operations | [Open module](modules/enterprise-resource-planning.md) |
+| **Payment Hub** | Payment operations and integrations | [Open module](modules/payment-hub.md) |
+| **Treasury Management** | Treasury and financial operations | [Open module](modules/treasury-management.md) |
+| **Fixed Assets Management** | Fixed asset lifecycle | [Open module](modules/fixed-assets-management.md) |
+| **Securities Management** | Securities processing | [Open module](modules/securities-management.md) |
+| **End-of-Day & Start-of-Day Processing** | Daily opening and closing operations | [Open module](modules/eod-sod-processing.md) |
 
-## Find what you need
+## How to navigate
 
-| Documentation area | LOAN_API | LOAN_TRANCHE_API | LOAN_CATEGORY_API |
-|---|---|---|---|
-| **Workflows** | [Open](workflows.md) | [Open](loan-tranche-workflows.md) | [Open](loan-category-workflows.md) |
-| **Data Model** | [Open](data-model.md) | [Open](loan-tranche-data-model.md) | [Open](loan-category-data-model.md) |
-| **Dependencies** | [Open](dependencies.md) | [Open](loan-tranche-dependencies.md) | [Open](loan-category-dependencies.md) |
-| **Error Handling** | [Open](error-handling.md) | [Open](loan-tranche-error-handling.md) | [Open](loan-category-error-handling.md) |
+**Module → Package → Documentation section.** Start with a module from the directory above, choose its package, then open the relevant API Reference, Workflows, Data Model, Dependencies or Error Handling page.
 
-## Package relationship overview
+The [Loan Management](modules/loan-management.md) module contains the three currently documented packages. Other modules have dedicated landing pages and will be populated as their package documentation is prepared.
 
-```mermaid
-flowchart LR
-    C[Banking channels / APEX / batch jobs]
-    C --> L[GAIA.LOAN_API]
-    C --> T[GAIA.LOAN_TRANCHE_API]
-    C --> K[GAIA.LOAN_CATEGORY_API]
-    T --> L
-    K --> L
-    K --> T
-    L --> D[(Loan data and configuration)]
-    T --> D
-    K --> D
-```
-
-*Simplified source-level integration map, not a complete call graph.*
-
-## Reading guide
-
-**Overview** sets the functional scope. **API Reference** gives public signatures and implementation-driven descriptions. **Workflows** trace main execution paths; **Data Model** identifies significant tables and logical joins; **Dependencies** describes shared services; and **Error Handling** documents source-observed validation and failure conditions.
-
-Public and private routines are distinguished, and unverified database relationships are not presented as physical constraints.
-
----
-
-*GNI Software · Loan Packages Documentation*
+*Source-based reference: physical database constraints and environment-dependent runtime details require separate verification.*
