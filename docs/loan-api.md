@@ -2,8 +2,6 @@
 
 **Enterprise loan services · Oracle PL/SQL · Source-based technical reference**
 
-> A structured reference for developers who maintain, integrate, troubleshoot and extend the shared `GAIA.LOAN_API` package. This documentation is a **reviewable proof of concept**, not an approved operational runbook.
-
 ---
 
 ## Overview
