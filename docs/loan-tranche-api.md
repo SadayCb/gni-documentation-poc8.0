@@ -22,15 +22,22 @@
 | [Dependencies](loan-tranche-dependencies.md) | Shared APIs, KRD2204, product and account configuration |
 | [Error Handling](loan-tranche-error-handling.md) | Common business validations and operational caveats |
 
-## Functional map
+## Functional areas
 
-- **Lifecycle:** `do_create_tranche`, `create_tranche`, `do_merge_tranche`.
-- **Payment schedules:** `do_payment_plan_creation`, `do_payment_plan_conversion`, `get_plan_payment_amount`, `get_Annuity_Amount`.
-- **Payments and allocation:** `generate_allocated_payment_list`, `distribute_payments_between_tranches`, `do_tranche_operation`.
-- **Interest and overdue:** `do_int_calculation`, `do_int_calculation_by_range`, `get_pen_info_for_calc`, `get_ovd_trs_oper_type`, `do_overdue_transit_operation`, `ovd_amount_correction`.
-- **Date and lookup utilities:** `get_loan_info`, `calculate_date`, `get_ovd_date`, `get_Pym_Startdate`.
-- **Audit and reversal:** `create_tranche_history`, `table_log_operation`, `delete_tranche`, `do_delete_operation`.
-- **Integration and integrity:** `apex_krd2204_2_view`, `get_plan_error`, `do_plan_control`.
+The **27 public interfaces** are grouped by primary business responsibility. Each area links to its corresponding API index section.
+
+| Functional area | Purpose | Public methods | Reference |
+|---|---|---:|---|
+| **Tranche lifecycle** | Creation, execution and consolidation of tranche records. | 3 | [View methods](loan-tranche-api-reference.md#tranche-lifecycle) |
+| **Payment schedules** | Generation, conversion and calculation of tranche repayment schedules. | 4 | [View methods](loan-tranche-api-reference.md#payment-schedules) |
+| **Payments and allocation** | Allocation of loan-account payments among tranches and operation execution. | 3 | [View methods](loan-tranche-api-reference.md#payments-and-allocation) |
+| **Interest and penalties** | Interest calculations and overdue penalty calculation inputs. | 3 | [View methods](loan-tranche-api-reference.md#interest-and-penalties) |
+| **Overdue and transit** | Overdue/transit classification, movement processing and corrective postings. | 3 | [View methods](loan-tranche-api-reference.md#overdue-and-transit) |
+| **Dates and loan lookup** | Loan record retrieval and configurable payment/overdue dates. | 4 | [View methods](loan-tranche-api-reference.md#dates-and-loan-lookup) |
+| **History and reversal** | Tranche ledger history, logging, deletion and restoration. | 4 | [View methods](loan-tranche-api-reference.md#history-and-reversal) |
+| **Integration and validation** | APEX view integration and tranche plan consistency checks. | 3 | [View methods](loan-tranche-api-reference.md#integration-and-validation) |
+
+**Total: 27 public methods — 18 procedures and 9 functions.** These are documentation categories, not separate PL/SQL packages.
 
 ## Architecture
 
