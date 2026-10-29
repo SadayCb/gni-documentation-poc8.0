@@ -2,7 +2,7 @@
 
 [← Overview](loan-tranche-api.md) · [API Reference](loan-tranche-api-reference.md) · [Workflows](loan-tranche-workflows.md) · [Dependencies](loan-tranche-dependencies.md)
 
-This is a **curated register of important business validations and processing failures** observed in the supplied package body. It follows the organization of the [LOAN_API Error Handling page](error-handling.md), with tranche-specific conditions. It is **not** an exhaustive Oracle error list or a promise of stable message text.
+This is a **curated register of important business validations and processing failures** observed in the supplied package body. It is **not** an exhaustive Oracle error list or a promise of stable message text.
 
 The source invokes `R(...)` for many validation failures. Its exact implementation and resulting Oracle error code are not established by the supplied package. Messages containing live amounts, loan numbers or `SQLERRM` are summarized by cause instead of quoted as partial strings.
 
