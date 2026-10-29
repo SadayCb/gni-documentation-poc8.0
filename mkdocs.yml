@@ -1,0 +1,14 @@
+site_name: GNI LOAN_API Documentation
+site_description: Source-backed loan API documentation preview
+docs_dir: docs
+nav:
+  - Overview: index.md
+  - API Reference: api.md
+  - Workflows: workflows.md
+  - Data Model: data-model.md
+  - Dependencies: dependencies.md
+  - Error Handling: error-handling.md
+theme:
+  name: material
+markdown_extensions:
+  - tables
