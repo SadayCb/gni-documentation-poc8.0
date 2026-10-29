@@ -10,7 +10,13 @@ nav:
       - Data Model: data-model.md
       - Dependencies: dependencies.md
       - Error Handling: error-handling.md
-  - LOAN_TRANCHE_API: loan-tranche-api.md
+  - LOAN_TRANCHE_API:
+      - Overview: loan-tranche-api.md
+      - API Reference: loan-tranche-api-reference.md
+      - Workflows: loan-tranche-workflows.md
+      - Data Model: loan-tranche-data-model.md
+      - Dependencies: loan-tranche-dependencies.md
+      - Error Handling: loan-tranche-error-handling.md
   - LOAN_CATEGORY_API: loan-category-api.md
 theme:
   name: material
