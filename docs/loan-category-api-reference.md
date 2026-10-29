@@ -2,7 +2,7 @@
 
 [← Overview](loan-category-api.md) · [Data Model](loan-category-data-model.md) · [Dependencies](loan-category-dependencies.md) · [Error Handling](loan-category-error-handling.md)
 
-**Public declarations:** 14 (11 procedures and 3 functions). This is the initial source-backed documentation pass; the complex court-decision and collection processes require deeper branch-level review.
+**Public declarations:** 14 (11 procedures and 3 functions). Descriptions reflect the supplied package body. The long court-decision routine is summarized by its major business branches; it is not a line-by-line accounting specification.
 
 <a id="api-index"></a>
 ## API Index
@@ -57,7 +57,7 @@
 
 **Description**
 
-Reads rows with non-null PROC_NAME from SP_LOAN_SUB_CATEGORY_PR and executes dynamically assembled calls to the named routines. The configuration controls which category processes are invoked.
+Reads every row of `SP_LOAN_SUB_CATEGORY_PR` with a non-null `PROC_NAME`, constructs an anonymous PL/SQL block invoking `LOAN_CATEGORY_API.<configured name>`, and executes it with `EXECUTE IMMEDIATE`. Thus the enabled category jobs and their order come from configuration rather than a fixed list in this procedure. A malformed or unavailable configured routine can interrupt execution.
 
 **Signature**
 
@@ -82,7 +82,7 @@ None.
 
 **Description**
 
-Closes the current open category record for the loan/category code, then inserts the new category/subcategory record using the supplied transaction, start date and user context.
+Records a new category/subcategory for the specified loan in `LOAN_CATEGORY`, while end-dating the preceding category state using the supplied effective date (or logical system date). Transaction and user identifiers are carried into the category history when provided. This changes category history; it does not itself execute a payment or close the loan.
 
 **Signature**
 
@@ -94,12 +94,12 @@ procedure set_new_category(p_doc_no in varchar2, p_cat_code in number, p_sub_cat
 
 | Parameter | Mode | Meaning |
 |---|---|---|
-| `p_doc_no` | IN | varchar2 input/output for the described business operation. |
-| `p_cat_code` | IN | number input/output for the described business operation. |
-| `p_sub_cat_code` | IN | number input/output for the described business operation. |
-| `p_tx_fid` | IN | number input/output for the described business operation. |
-| `p_start_date` | IN | date input/output for the described business operation. |
-| `p_user_id` | IN | varchar2 input/output for the described business operation. |
+| `p_doc_no` | IN | Loan document number; optionally narrows processing when defaulted to NULL. |
+| `p_cat_code` | IN | New loan category code. |
+| `p_sub_cat_code` | IN | New loan subcategory code. |
+| `p_tx_fid` | IN | Transaction identifier used for history or accounting linkage. |
+| `p_start_date` | IN | Effective category date or historical payment search start date, depending on the routine. |
+| `p_user_id` | IN | User identifier associated with category change. |
 
 **Dependencies:** [Dependency register](loan-category-dependencies.md).
 
@@ -114,7 +114,7 @@ procedure set_new_category(p_doc_no in varchar2, p_cat_code in number, p_sub_cat
 
 **Description**
 
-Iterates active LOAN_CHARGE_OFF_PARAMETERS rules, excluding parameter code 1, executes their configured selection queries and updates the charge-off/category processing state for matching loans.
+Reads active rules in `LOAN_CHARGE_OFF_PARAMETERS`, optionally filtered by `p_param_code`, and excludes parameter code `1`. It executes each rule's configured selection SQL to identify eligible loans, optionally scoped to `p_doc_no`, then uses the charge-off worklist and loan/category state to apply configured status changes. Eligibility therefore depends on current configuration and the selected loans, not a single hard-coded status condition.
 
 **Signature**
 
@@ -126,8 +126,8 @@ procedure set_charge_off_status(p_param_code in varchar2 default null, p_doc_no 
 
 | Parameter | Mode | Meaning |
 |---|---|---|
-| `p_param_code` | IN | varchar2 input/output for the described business operation. |
-| `p_doc_no` | IN | varchar2 input/output for the described business operation. |
+| `p_param_code` | IN | Configured rule/parameter code; NULL selects all applicable rules. |
+| `p_doc_no` | IN | Loan document number; optionally narrows processing when defaulted to NULL. |
 
 **Dependencies:** [Dependency register](loan-category-dependencies.md).
 
@@ -147,7 +147,7 @@ procedure set_charge_off_status(p_param_code in varchar2 default null, p_doc_no 
 
 **Description**
 
-Processes pending court-decision records filtered by contract and transaction ID. It resolves loan/account and currency details, compares declared debt to component amounts, adjusts debt for payments after the decision date from IBS and GNI history, and assembles/account-posts eligible reclassification entries. Its branches depend on decision type, product exceptions, debt components and loan balances.
+Processes `LOAN_COURT_DECISION_LIST` entries whose `PROCESS_STATUS = 'N'` and `TX_FID = p_txfid`, optionally restricted by contract. Each entry resolves `KRD_TEKLIF_DETAY`, `LOAN_ACCOUNTS`, payment-account data and currency conversion. The procedure compares principal, interest, penalty and legal-expense components with the declared total and records inconsistencies in `SS_KRD22060_0_LOG`. For the applicable decision branch it deducts payments made since the decision date using both legacy IBS totals and GNI `LOAN_OPERATION_HISTORY`, with the result floored at zero. It evaluates product-specific exceptions and current balance components, constructs debit/credit reclassification entries for eligible amounts, and uses shared loan/accounting services to apply the decision and record its outcome. The detailed posting path depends on decision type, product, loan status and the component being adjusted; it is not a single universal write-off rule.
 
 **Signature**
 
@@ -159,8 +159,8 @@ procedure apply_court_decision(p_contract_no in varchar2, p_txfid in number);
 
 | Parameter | Mode | Meaning |
 |---|---|---|
-| `p_contract_no` | IN | varchar2 input/output for the described business operation. |
-| `p_txfid` | IN | number input/output for the described business operation. |
+| `p_contract_no` | IN | Court-decision contract number; optional filter of pending records. |
+| `p_txfid` | IN | Transaction batch identifier matching pending court-decision rows. |
 
 **Dependencies:** [Dependency register](loan-category-dependencies.md).
 
@@ -175,7 +175,7 @@ procedure apply_court_decision(p_contract_no in varchar2, p_txfid in number);
 
 **Description**
 
-Persists a debit/credit accounting entry proposal for a court-decision transaction in GAIA.LOAN_COURT_DECISION_ACCOUNTING_INFO, including account identifiers, amounts and description.
+Inserts a debit/credit entry record into `LOAN_COURT_DECISION_ACCOUNTING_INFO`, keyed by the court-decision transaction and recording debit/credit account and subaccount, transaction amount, local-currency amount and description. This stages accounting details for subsequent retrieval; it does not itself post a GL journal.
 
 **Signature**
 
@@ -187,14 +187,14 @@ procedure inst_accounting_data(p_tx_fid in number, p_dr_acc in number, p_dr_sub 
 
 | Parameter | Mode | Meaning |
 |---|---|---|
-| `p_tx_fid` | IN | number input/output for the described business operation. |
-| `p_dr_acc` | IN | number input/output for the described business operation. |
-| `p_dr_sub` | IN | number input/output for the described business operation. |
-| `p_cr_acc` | IN | number input/output for the described business operation. |
-| `p_cr_sub` | IN | number input/output for the described business operation. |
-| `p_amount` | IN | number input/output for the described business operation. |
-| `p_amount_lc` | IN | number input/output for the described business operation. |
-| `p_desc` | IN | varchar2 input/output for the described business operation. |
+| `p_tx_fid` | IN | Transaction identifier used for history or accounting linkage. |
+| `p_dr_acc` | IN | Debit account number. |
+| `p_dr_sub` | IN | Debit subaccount number. |
+| `p_cr_acc` | IN | Credit account number. |
+| `p_cr_sub` | IN | Credit subaccount number. |
+| `p_amount` | IN | Transaction-currency accounting amount. |
+| `p_amount_lc` | IN | Local-currency accounting amount, if supplied. |
+| `p_desc` | IN | Accounting-entry description. |
 
 **Dependencies:** [Dependency register](loan-category-dependencies.md).
 
@@ -209,7 +209,7 @@ procedure inst_accounting_data(p_tx_fid in number, p_dr_acc in number, p_dr_sub 
 
 **Description**
 
-Reads saved court-decision accounting entries by transaction ID, resolves the loan's branch/customer context and returns LOAN_API entry records for downstream posting.
+Selects saved court-decision accounting records by `p_tx_fid`, resolves loan/customer context as required, and maps each row into `LOAN_API.G_ENTRIES_LIST_REC`. Returns the assembled `LOAN_API.G_ENTRIES_LIST_TAB` via the OUT parameter for later journal posting.
 
 **Signature**
 
@@ -221,8 +221,8 @@ procedure fill_acc_tab(p_tx_fid in number, p_acc_tab out loan_api.g_entries_list
 
 | Parameter | Mode | Meaning |
 |---|---|---|
-| `p_tx_fid` | IN | number input/output for the described business operation. |
-| `p_acc_tab` | OUT | loan_api.g_entries_list_tab input/output for the described business operation. |
+| `p_tx_fid` | IN | Transaction identifier used for history or accounting linkage. |
+| `p_acc_tab` | OUT | OUT: collection of loan journal entry records. |
 
 **Dependencies:** [Dependency register](loan-category-dependencies.md).
 
@@ -242,7 +242,7 @@ procedure fill_acc_tab(p_tx_fid in number, p_acc_tab out loan_api.g_entries_list
 
 **Description**
 
-Processes configured loan auto-closure rules, optionally bounded by parameter code, document, branch range and run type. It inspects loan/account balances and executes the configured closure/accounting path for eligible records.
+Uses configured auto-closure parameters and candidate records in `LOAN_EOD_AUTO_CLOSE` to find loans eligible for closure. Inputs can restrict rule, document, branch range and execution mode. It reads loan and account balances, checks the rule-dependent conditions, builds required accounting entries and invokes shared loan-closing services. Eligibility and posting depend on the selected configured rule.
 
 **Signature**
 
@@ -254,11 +254,11 @@ procedure do_close_operation(p_param_code in varchar2 default null, p_doc_no in 
 
 | Parameter | Mode | Meaning |
 |---|---|---|
-| `p_param_code` | IN | varchar2 input/output for the described business operation. |
-| `p_doc_no` | IN | varchar2 input/output for the described business operation. |
-| `p_min_id` | IN | number input/output for the described business operation. |
-| `p_max_id` | IN | number input/output for the described business operation. |
-| `p_run_type` | IN | varchar2 input/output for the described business operation. |
+| `p_param_code` | IN | Configured rule/parameter code; NULL selects all applicable rules. |
+| `p_doc_no` | IN | Loan document number; optionally narrows processing when defaulted to NULL. |
+| `p_min_id` | IN | Lower branch/range boundary. |
+| `p_max_id` | IN | Upper branch/range boundary. |
+| `p_run_type` | IN | Controls the auto-close run scope (default ALL). |
 
 **Dependencies:** [Dependency register](loan-category-dependencies.md).
 
@@ -273,7 +273,7 @@ procedure do_close_operation(p_param_code in varchar2 default null, p_doc_no in 
 
 **Description**
 
-Runs the extended auto-closure flow using active LOAN_EOD_AUTO_CLOSE_PARAMETERS rules, staged candidate rows and loan/collateral checks; optionally restricts the scope to one document.
+Processes the extended auto-close candidates using `LOAN_EOD_AUTO_CLOSE_PARAMETERS` and `LOAN_EOD_AUTO_CLOSE`, optionally for one loan. It checks loan attributes and collateral relationships (including `KRD_SCOR_TEMINAT_ALAKA_C`) before preparing closure entries and invoking shared loan operations. This is an additional closure path, not a simple alias of `do_close_operation`.
 
 **Signature**
 
@@ -285,7 +285,7 @@ procedure do_close_loans_ex(p_doc_no in varchar2 default null);
 
 | Parameter | Mode | Meaning |
 |---|---|---|
-| `p_doc_no` | IN | varchar2 input/output for the described business operation. |
+| `p_doc_no` | IN | Loan document number; optionally narrows processing when defaulted to NULL. |
 
 **Dependencies:** [Dependency register](loan-category-dependencies.md).
 
@@ -305,7 +305,7 @@ procedure do_close_loans_ex(p_doc_no in varchar2 default null);
 
 **Description**
 
-Collects payable loan amounts using a staged candidate list, configured payment-plan/account information, available customer accounts and exception rules. Builds posting entries for eligible collections and records processing results.
+Builds payment-collection candidates from `LOAN_PAYMENT_COLLECT_TEMP_LIST`, loan schedules and loan/customer account data, optionally filtered by document and customer. It checks collection exceptions, guarantee relationships, account balances and applicable product/payment rules. For eligible amounts it prepares debit/credit posting entries and records collection processing through the relevant banking routines and tracking tables. An eligible loan does not necessarily produce a collection if no usable payer balance is available.
 
 **Signature**
 
@@ -317,8 +317,8 @@ procedure collect_payment(p_doc_no in varchar2 default null, p_cust_no in number
 
 | Parameter | Mode | Meaning |
 |---|---|---|
-| `p_doc_no` | IN | varchar2 input/output for the described business operation. |
-| `p_cust_no` | IN | number input/output for the described business operation. |
+| `p_doc_no` | IN | Loan document number; optionally narrows processing when defaulted to NULL. |
+| `p_cust_no` | IN | Customer number to filter collection or close overdraft loans. |
 
 **Dependencies:** [Dependency register](loan-category-dependencies.md).
 
@@ -333,7 +333,7 @@ procedure collect_payment(p_doc_no in varchar2 default null, p_cust_no in number
 
 **Description**
 
-Calls IBS.GET_CRD_PERC_ACCOUNTING_SUM for the given credit account from the supplied begin date through the configured migration date. Returns TRUE when the amount is nonzero and FALSE otherwise.
+Calls `IBS.GET_CRD_PERC_ACCOUNTING_SUM` for the specified credit account and period from `p_begin_date` to the package's migration cutoff. Returns a PL/SQL Boolean according to whether the amount is nonzero. Because its result is `BOOLEAN`, callers must use PL/SQL rather than ordinary SQL projection.
 
 **Signature**
 
@@ -345,8 +345,8 @@ function is_payed(p_acc in number, p_begin_date in date) return boolean;
 
 | Parameter | Mode | Meaning |
 |---|---|---|
-| `p_acc` | IN | number input/output for the described business operation. |
-| `p_begin_date` | IN | date input/output for the described business operation. |
+| `p_acc` | IN | IBS account identifier checked for payment. |
+| `p_begin_date` | IN | Beginning of the IBS payment lookup interval. |
 
 **Dependencies:** [Dependency register](loan-category-dependencies.md).
 
@@ -361,7 +361,7 @@ function is_payed(p_acc in number, p_begin_date in date) return boolean;
 
 **Description**
 
-Aggregates legacy IBS accounting movements by debt component (MAIN, INT, PEN and legal expense) since the supplied start date for a credit contract and returns the four totals via OUT parameters.
+Reads legacy IBS / DWMAIN accounting transactions for the contract from `p_start_date`, classifies relevant movements into principal, interest, penalty and legal-expense components, and returns four aggregated amounts through OUT parameters. Contract/account and historical-transaction mapping influence which entries are included.
 
 **Signature**
 
@@ -373,12 +373,12 @@ procedure get_pymt_info_from_ibs(p_cont_no in varchar2, p_start_date in date, p_
 
 | Parameter | Mode | Meaning |
 |---|---|---|
-| `p_cont_no` | IN | varchar2 input/output for the described business operation. |
-| `p_start_date` | IN | date input/output for the described business operation. |
-| `p_main_amnt` | OUT | number input/output for the described business operation. |
-| `p_int_amnt` | OUT | number input/output for the described business operation. |
-| `p_pen_amnt` | OUT | number input/output for the described business operation. |
-| `p_legal_amnt` | OUT | number input/output for the described business operation. |
+| `p_cont_no` | IN | Legacy credit contract number. |
+| `p_start_date` | IN | Effective category date or historical payment search start date, depending on the routine. |
+| `p_main_amnt` | OUT | OUT: total principal payments found in IBS. |
+| `p_int_amnt` | OUT | OUT: total interest payments found in IBS. |
+| `p_pen_amnt` | OUT | OUT: total penalty payments found in IBS. |
+| `p_legal_amnt` | OUT | OUT: total legal-expense payments found in IBS. |
 
 **Dependencies:** [Dependency register](loan-category-dependencies.md).
 
@@ -393,7 +393,7 @@ procedure get_pymt_info_from_ibs(p_cont_no in varchar2, p_start_date in date, p_
 
 **Description**
 
-Checks legacy IBS payment/accounting movements for a given contract within the historical lookback window (36 months from logical date) and returns a Y/N indicator based on the recorded aggregate.
+Aggregates qualifying legacy IBS/DWMAIN payment history for the supplied contract over a lookback window beginning 36 months before the package's logical processing date. Returns a character indicator (`Y` when matching paid amount is found, otherwise `N`), rather than an amount.
 
 **Signature**
 
@@ -405,7 +405,7 @@ function has_payment(p_cont_no in varchar2) return varchar2;
 
 | Parameter | Mode | Meaning |
 |---|---|---|
-| `p_cont_no` | IN | varchar2 input/output for the described business operation. |
+| `p_cont_no` | IN | Legacy credit contract number. |
 
 **Dependencies:** [Dependency register](loan-category-dependencies.md).
 
@@ -425,7 +425,7 @@ function has_payment(p_cont_no in varchar2) return varchar2;
 
 **Description**
 
-Requires a customer number and delegates overdraft closure to LOAN_API.CREATE_OVERDRAFTS with operation CLOSE_LOAN.
+Rejects a null customer number with an application error; otherwise delegates the customer's overdraft-loan closing action to `GAIA.LOAN_API.CREATE_OVERDRAFTS` using `p_oper_type => 'CLOSE_LOAN'`. It does not directly implement the overdraft account update.
 
 **Signature**
 
@@ -437,7 +437,7 @@ procedure change_ov_status(p_cust_no in number);
 
 | Parameter | Mode | Meaning |
 |---|---|---|
-| `p_cust_no` | IN | number input/output for the described business operation. |
+| `p_cust_no` | IN | Customer number to filter collection or close overdraft loans. |
 
 **Dependencies:** [Dependency register](loan-category-dependencies.md).
 
@@ -452,7 +452,7 @@ procedure change_ov_status(p_cust_no in number);
 
 **Description**
 
-Looks up the loan in LOAN_PORTFOLIO by DOC_NO and returns 1 when LOAN_TYPE is QN, or 0 for other types. Missing or duplicate matches follow Oracle SELECT INTO behavior.
+Queries `LOAN_PORTFOLIO` by loan document number and maps `LOAN_TYPE = 'QN'` to `1`; all other matched types return `0`. The function uses a single-row lookup, so an absent or non-unique matching row follows the corresponding Oracle exception behavior.
 
 **Signature**
 
@@ -464,7 +464,7 @@ function is_guaarantee(p_doc_no in varchar2) return number;
 
 | Parameter | Mode | Meaning |
 |---|---|---|
-| `p_doc_no` | IN | varchar2 input/output for the described business operation. |
+| `p_doc_no` | IN | Loan document number; optionally narrows processing when defaulted to NULL. |
 
 **Dependencies:** [Dependency register](loan-category-dependencies.md).
 
