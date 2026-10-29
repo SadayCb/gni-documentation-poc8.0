@@ -54,9 +54,3 @@ flowchart TD
   C --> D
   R --> D
 ```
-
-## Technical review findings
-
-- The supplied body appears to declare `l_loan_tranche_list` twice inside `do_create_tranche` (lines 976–977). Confirm compilation in the actual schema; no source code was altered.
-- `prepare_loans_for_ovd_trs`, `update_payment_plan`, `pen_main_correction`, `apex_krd2204_2_pivot_view`, and `get_loan_sche_info` are private to the body rather than public API declarations.
-- Account-type and schedule processing relies on configuration and on shared `LOAN_API`; workflows should not be treated as a standalone transaction guarantee.
