@@ -1,8 +1,23 @@
-site_name: GNI Loan Packages Documentation
-site_description: Source-backed Oracle PL/SQL loan module documentation
+site_name: GNI Software Documentation
+site_description: Banking modules and source-backed Oracle PL/SQL package documentation
 docs_dir: docs
 nav:
-  - Loan Packages: index.md
+  - Home: index.md
+  - Modules:
+      - "System Administration": modules/system-administration.md
+      - "Customer Onboarding": modules/customer-onboarding.md
+      - "Loan Management": modules/loan-management.md
+      - "Anti-Money Laundering (AML)": modules/anti-money-laundering.md
+      - "Credit Scoring": modules/credit-scoring.md
+      - "Fraud Detection & Prevention": modules/fraud-detection-prevention.md
+      - "Accounting & General Ledger": modules/accounting-general-ledger.md
+      - "Non-Performing Loans (NPL)": modules/non-performing-loans.md
+      - "Enterprise Resource Planning (ERP)": modules/enterprise-resource-planning.md
+      - "Payment Hub": modules/payment-hub.md
+      - "Treasury Management": modules/treasury-management.md
+      - "Fixed Assets Management": modules/fixed-assets-management.md
+      - "Securities Management": modules/securities-management.md
+      - "End-of-Day & Start-of-Day Processing": modules/eod-sod-processing.md
   - LOAN_API:
       - Overview: loan-api.md
       - API Reference: api.md
@@ -28,3 +43,4 @@ theme:
   name: material
 markdown_extensions:
   - tables
+  - pymdownx.superfences
