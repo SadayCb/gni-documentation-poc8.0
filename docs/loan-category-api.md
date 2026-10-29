@@ -1,6 +1,6 @@
 # LOAN_CATEGORY_API — Overview
 
-[← All packages](index.md) · [API Reference](loan-category-api-reference.md) · [Workflows](loan-category-workflows.md) · [Data Model](loan-category-data-model.md) · [Dependencies](loan-category-dependencies.md) · [Error Handling](loan-category-error-handling.md)
+[← Loan Management](./modules/loan-management.md)
 
 `GAIA.LOAN_CATEGORY_API` coordinates category-related loan processing, court-decision debt adjustments, charge-off classification, automatic loan closure and payment collection. The package also reads legacy IBS transaction history when evaluating payments and legal decisions.
 
