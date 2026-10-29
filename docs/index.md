@@ -27,12 +27,16 @@ A single entry point for understanding the public APIs and business processes of
 
 ```mermaid
 flowchart LR
- A[Business / APEX / batch calls] --> L[LOAN_API]
- A --> T[LOAN_TRANCHE_API]
- A --> C[LOAN_CATEGORY_API]
- T --> L
- C --> L
- C --> T
+    C[Banking channels / APEX / batch jobs]
+    C --> L[GAIA.LOAN_API]
+    C --> T[GAIA.LOAN_TRANCHE_API]
+    C --> K[GAIA.LOAN_CATEGORY_API]
+    T --> L
+    K --> L
+    K --> T
+    L --> D[(Loan data and configuration)]
+    T --> D
+    K --> D
 ```
 
 *Simplified source-level integration map, not a complete call graph.*
