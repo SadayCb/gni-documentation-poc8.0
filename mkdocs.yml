@@ -8,7 +8,7 @@ nav:
       - "Customer Onboarding": modules/customer-onboarding.md
       - "Loan Management":
           - Module Overview: modules/loan-management.md
-        - LOAN_API:
+          - LOAN_API:
               - Overview: loan-api.md
               - API Reference: api.md
               - Workflows: workflows.md
@@ -40,7 +40,7 @@ nav:
       - "Fixed Assets Management": modules/fixed-assets-management.md
       - "Securities Management": modules/securities-management.md
       - "End-of-Day & Start-of-Day Processing": modules/eod-sod-processing.md
-  theme:
+theme:
   name: material
 markdown_extensions:
   - tables
