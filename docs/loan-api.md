@@ -72,13 +72,4 @@ The API is organized into **nine navigation domains**. These categories organize
 | [History, metadata and reversal](api.md#domain-history-metadata-and-reversal) | Records operation metadata and history and supports reversing mapped changes |
 
 
-## Scope and review notes
-
-- Public API inventory is derived from active declarations in the supplied specification; commented-out declarations are excluded.
-- Business explanations are based on the provided implementation, but **not every method has completed manual semantic review**.
-- Workflow diagrams are intentionally general and should not be mistaken for scheduling requirements.
-- Before customer publication, validate business rules, sensitive implementation details and transaction boundaries with the responsible maintainers.
-
----
-
 **GNI Software — LOAN_API Documentation** · [Browse the full API](api.md) · [All loan packages](index.md)
