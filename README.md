@@ -4,8 +4,6 @@
 
 A centralized documentation workspace for three related loan-service packages. The goal is to make their **public interfaces, business behavior, data relationships, integrations, and processing workflows** easy to understand without reading thousands of lines of PL/SQL for every question.
 
-> **Documentation scope:** Source-based technical reference, not a substitute for deployed schema metadata, integration testing, or production operational procedures.
-
 ---
 
 ## Explore the packages
