@@ -184,7 +184,7 @@ procedure create_tranche(p_doc_no         in varchar2,
 
 **Description**
 
-Selects tranche records whose accumulated balance buckets are positive, `MERGE_DATE <= p_date`, and `MAIN_TRANCHE_NO IS NULL`; joins active loan master data and optionally narrows to `p_doc_no`. For each eligible tranche it obtains the base `KRD_ODEME_PLAN` and the main tranche (`TRANCHE_NO = MAIN_TRANCHE_NO`), validates uniqueness, logs the operation, and applies consolidation and schedule-related changes.
+Selects active loan records and unmerged tranche rows (`MAIN_TRANCHE_NO IS NULL`) whose `MERGE_DATE` is on or before the requested date and whose combined principal, transit, interest, overdue, accrued and penalty balances are positive. For each selected row it allocates a transaction identifier, retrieves the base repayment schedule in `KRD_ODEME_PLAN`, and looks for the existing main tranche (`TRANCHE_NO = MAIN_TRANCHE_NO`); multiple matches are rejected. It then processes the merge against the tranche's principal and plan information, recording the required changes. It is eligibility-driven rather than a blanket merge of all tranches for a loan.
 
 **Signature**
 
@@ -257,7 +257,7 @@ procedure do_payment_plan_creation(p_date   date default glbl.getsysdate,
 
 **Description**
 
-Converts payment schedules to a configured type. Locates active loans requiring conversion, resolves pending product schedule mapping from PKRD_ODETIP_PR and LOAN_SCHEDULE_TYPES, regenerates schedule and updates tranche plan amounts/dates with logging and transaction context.
+Processes active, tranche-enabled loans marked for schedule conversion where `SCHEDULE_CONVERSION_DATE` is no later than the computed next-working-day boundary. It joins the loan master to its base repayment plan and product settings, registers an EOD `PLAN_CONVERSION` transaction, and requires a unique `PENDING` conversion mapping in `PKRD_ODETIP_PR`. It retrieves the target `LOAN_SCHEDULE_TYPES` record and applies the converted schedule and corresponding tranche plan changes. Missing or duplicate mappings are reported explicitly.
 
 **Signature**
 
@@ -288,7 +288,7 @@ procedure do_payment_plan_conversion(p_date   date default glbl.getsysdate,
 
 **Description**
 
-Returns outstanding scheduled amount for a loan tranche. Aggregates unpaid plan balance by document and tranche, with optional account type and date filtering; uses tranche payment-plan rows and account-type configuration.
+Returns the outstanding due amount for one loan or tranche as of the requested date. The query joins `LOAN_TRANCHE_PAYMENT_PLAN` to `LOAN_ACC_TYPES_PR` and includes only account types configured with `HAS_PAYMENT_PLAN_YN = 'Y'`, open plan rows (`IS_CLOSED = 'N'`) and `PLAN_DATE <= p_date`. Tranche and account-type inputs are optional filters. It sums `NVL(PAYMENT_AMOUNT,0) - NVL(PAID_AMOUNT,0)` and returns `GREATEST(0, amount)`, so a negative aggregate is returned as zero.
 
 **Signature**
 
@@ -324,7 +324,7 @@ function get_plan_payment_amount(p_doc_no     in varchar2,
 
 **Description**
 
-Returns planned annuity for loan tranche. Queries tranche payment-plan amounts and applies p_return_type selection (default NO_ZERO) when deriving numeric annuity.
+Finds the first **future** payment-plan date for the requested loan/tranche, considering only open schedule entries whose configured account group is MAIN or INT and which have payment-plan support enabled. With `NO_ZERO` (the default), the date search requires a positive scheduled amount; `WITH_ZERO` also allows zero amounts. It then sums the MAIN and INT `PAYMENT_AMOUNT` values on that selected date and returns zero if no matching entries exist. This is the first qualifying installment, not an average across all installments.
 
 **Signature**
 
@@ -816,7 +816,7 @@ function calculate_date(p_period_type    varchar2,
 
 **Description**
 
-Finds effective overdue date for account type. Evaluates loan maturity, unpaid tranche plan dates and account balances for requested document/account type/date; returns applicable due/overdue boundary.
+Looks up the loan's maturity date and product-level overdue minimum amounts in `KRD_TEKLIF_DETAY` and `PKRD_TURKOD_PR`. It chooses the principal or interest threshold from `p_acc_type`, then examines open, nonzero overdue payment-plan amounts joined to tranche configuration and account groups `OVD_MAIN`/`OVD_INT` through the requested date. Each plan date is transformed using `calculate_date` with the tranche overdue-period settings. The query uses a cumulative window sum to identify the applicable earliest overdue date relative to the threshold, rather than merely returning the minimum raw payment-plan date.
 
 **Signature**
 
@@ -1131,7 +1131,7 @@ function get_plan_error(p_doc_no     varchar2,
 
 **Description**
 
-Calls `get_plan_error(p_document_no, p_check_type, p_date)` to obtain repayment-plan diagnostics. When the returned message is not null, raises it with `R`; otherwise exits without changing the schedule. Unlike the similarly named `LOAN_API` procedure, **this implementation contains no `LOAN_EOD_CONTROL_EXP` exclusion check**.
+Validates a tranche-enabled loan's repayment-plan consistency by calling `get_plan_error(p_document_no, p_check_type, p_date)`. If that function returns diagnostic text, it raises an application error via `R`; otherwise it exits without altering the schedule. The tranche version does **not** perform the `LOAN_EOD_CONTROL_EXP` exclusion lookup used in the separate `LOAN_API.do_plan_control` implementation.
 
 **Signature**
 
