@@ -165,7 +165,7 @@ procedure create_tranche(p_doc_no         in varchar2,
 | `p_tranche_type` | IN | Tranche type supplied for creation. |
 | `p_tracnhe_term` | IN | Tranche term supplied for creation (spelling follows package specification). |
 | `p_tranche_amount` | IN | Requested tranche amount. |
-| `p_int_amount` | IN | Interest-related amount supplied when creating the tranche. |
+| `p_int_amount` | IN | Signed change to regular interest balance. |
 | `p_tx_fid` | IN | Transaction identifier used to associate the operation with its transaction history. |
 | `p_date` | IN | Effective processing date (default: logical system date where declared). |
 
@@ -473,7 +473,7 @@ procedure do_tranche_operation(p_oper_type           in varchar2,
 | `p_loan_accounts` | IN OUT | Loan-account records used or updated by processing. |
 | `p_loan_tranche` | IN OUT | Tranche collection updated by the operation. |
 | `p_process` | IN | Processing stage (default ALLOCATE). |
-| `p_schedule_parametrs` | IN | Supplied create_schedule_parametrs%rowtype parameter used by this operation. |
+| `p_schedule_parametrs` | IN | Schedule generation settings passed to the tranche operation; optional CREATE_SCHEDULE_PARAMETRS row. |
 
 **Dependencies:** [Dependency register](loan-tranche-dependencies.md).
 
@@ -871,9 +871,9 @@ Function get_Pym_Startdate(p_Doc_No          In Varchar2,
 |---|---|---|
 | `p_Doc_No` | IN | Loan document number identifying the target loan. |
 | `p_tranche_no` | IN | Tranche identifier to select or update. |
-| `p_pymt_date` | IN | Supplied Date parameter used by this operation. |
+| `p_pymt_date` | IN | Reference payment date used to calculate the next payment start date. |
 | `p_pymt_day` | IN | Configured payment day. |
-| `p_pymt_period` | IN | Supplied Number parameter used by this operation. |
+| `p_pymt_period` | IN | Payment periodicity used for the next repayment date. |
 | `p_acc_type` | IN | Account type filter or target account classification. |
 | `p_loan_end_Date` | IN | Loan maturity date. |
 | `p_check_is_closed` | IN | Whether closed payment-plan rows are considered (default Y). |
@@ -938,19 +938,19 @@ procedure create_tranche_history(p_trn_date             in date,
 | `p_tranche_no` | IN | Tranche identifier to select or update. |
 | `p_trn_type` | IN | History change mode (I/U/D) or requested operation mode. |
 | `p_eod_sod` | IN | End/start-of-day processing indicator. |
-| `p_main_amount` | IN | Supplied number parameter used by this operation. |
-| `p_main_trs_amount` | IN | Supplied number parameter used by this operation. |
-| `p_int_amount` | IN | Interest-related amount supplied when creating the tranche. |
-| `p_int_trs_amount` | IN | Supplied number parameter used by this operation. |
-| `p_ovd_main_amount` | IN | Supplied number parameter used by this operation. |
-| `p_ovd_int_amount` | IN | Supplied number parameter used by this operation. |
-| `p_ovd_calc_int_amount` | IN | Supplied number parameter used by this operation. |
-| `p_trs_calc_int_amount` | IN | Supplied number parameter used by this operation. |
-| `p_pen_main_amount` | IN | Supplied number parameter used by this operation. |
-| `p_int_virt_amount` | IN | Supplied number parameter used by this operation. |
-| `p_LP_MAIN_AMOUNT` | IN | Supplied number parameter used by this operation. |
-| `p_pen_main_amount_real` | IN | Supplied number parameter used by this operation. |
-| `p_null_calc_access` | IN | Supplied varchar2 parameter used by this operation. |
+| `p_main_amount` | IN | Signed change to regular principal balance. |
+| `p_main_trs_amount` | IN | Signed change to principal in transit. |
+| `p_int_amount` | IN | Signed change to regular interest balance. |
+| `p_int_trs_amount` | IN | Signed change to interest in transit. |
+| `p_ovd_main_amount` | IN | Signed change to overdue principal. |
+| `p_ovd_int_amount` | IN | Signed change to overdue interest. |
+| `p_ovd_calc_int_amount` | IN | Signed change to accrued overdue interest. |
+| `p_trs_calc_int_amount` | IN | Signed change to accrued transit interest. |
+| `p_pen_main_amount` | IN | Signed change to principal penalty balance. |
+| `p_int_virt_amount` | IN | Signed change to virtual interest amount. |
+| `p_LP_MAIN_AMOUNT` | IN | Legacy LP principal amount argument; not written to the shown history INSERT or tranche balance UPDATE. |
+| `p_pen_main_amount_real` | IN | Actual penalty amount recorded in operation history; not added to the shown tranche balance UPDATE. |
+| `p_null_calc_access` | IN | If Y, shifts a non-null last calculation access date to the previous logical system day. |
 
 **Dependencies:** [Dependency register](loan-tranche-dependencies.md).
 
@@ -1120,7 +1120,7 @@ function get_plan_error(p_doc_no     varchar2,
 
 **Errors:** [Verified business/error conditions](loan-tranche-error-handling.md).
 
-*Source: supplied package body, lines 5815–5842.*
+*Source: supplied package body, lines 5815–6481.*
 
 [↑ API Index](#api-index) · [↑ Functional area](#domain-integration-and-validation)
 
