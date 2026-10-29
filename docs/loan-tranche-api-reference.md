@@ -1,91 +1,83 @@
 # LOAN_TRANCHE_API — API Reference
 
-[← Overview](loan-tranche-api.md) · [All packages](index.md)
+[← Overview](loan-tranche-api.md) · [Workflows](loan-tranche-workflows.md) · [Data Model](loan-tranche-data-model.md) · [Dependencies](loan-tranche-dependencies.md) · [Error Handling](loan-tranche-error-handling.md)
 
-**Inventory:** 27 public members (18 procedures, 9 functions), identified from supplied package specification. Body-only helpers are excluded. Each entry reproduces the public signature and summarizes its implementation.
+**Public API:** 27 declarations (18 procedures and 9 functions). Method signatures are retained from the supplied specification. Only public members are listed.
 
-## API index
+<a id="api-index"></a>
+## API Index
 
-Methods are grouped by their primary responsibility. Select a group or public method to jump directly to its documentation.
+### [Tranche lifecycle](#domain-tranche-lifecycle)
 
-### Tranche lifecycle
+Creates, executes, and consolidates loan tranches.
 
-Creation, execution and consolidation of tranche records.
+**Procedures**
 
-- [`do_create_tranche`](#do-create-tranche)
-- [`create_tranche`](#create-tranche)
-- [`do_merge_tranche`](#do-merge-tranche)
 
-### Payment schedules
+### [Payment schedules](#domain-payment-schedules)
 
-Generation, conversion and calculation of tranche repayment schedules.
+Creates, converts, and evaluates tranche-level repayment plans.
 
-- [`do_payment_plan_creation`](#do-payment-plan-creation)
-- [`do_payment_plan_conversion`](#do-payment-plan-conversion)
-- [`get_plan_payment_amount`](#get-plan-payment-amount)
-- [`get_Annuity_Amount`](#get-annuity-amount)
+**Procedures**
 
-### Payments and allocation
 
-Allocation of loan-account payments among tranches and operation execution.
+### [Payments and allocation](#domain-payments-and-allocation)
 
-- [`distribute_payments_between_tranches`](#distribute-payments-between-tranches)
-- [`generate_allocated_payment_list`](#generate-allocated-payment-list)
-- [`do_tranche_operation`](#do-tranche-operation)
+Allocates incoming funds and executes tranche-specific payments.
 
-### Interest and penalties
+**Procedures**
 
-Interest calculations and overdue penalty calculation inputs.
 
-- [`do_int_calculation`](#do-int-calculation)
-- [`do_int_calculation_by_range`](#do-int-calculation-by-range)
-- [`get_pen_info_for_calc`](#get-pen-info-for-calc)
+### [Interest and penalties](#domain-interest-and-penalties)
 
-### Overdue and transit
+Calculates interest and derives penalty calculation inputs.
 
-Overdue/transit classification, movement processing and corrective postings.
+**Procedures**
 
-- [`get_ovd_trs_oper_type`](#get-ovd-trs-oper-type)
-- [`do_overdue_transit_operation`](#do-overdue-transit-operation)
-- [`ovd_amount_correction`](#ovd-amount-correction)
 
-### Dates and loan lookup
+### [Overdue and transit](#domain-overdue-and-transit)
 
-Loan record retrieval and configurable payment/overdue dates.
+Classifies overdue positions and applies overdue/transit corrections.
 
-- [`get_loan_info`](#get-loan-info)
-- [`calculate_date`](#calculate-date)
-- [`get_ovd_date`](#get-ovd-date)
-- [`get_Pym_Startdate`](#get-pym-startdate)
+**Procedures**
 
-### History and reversal
 
-Tranche ledger history, logging, deletion and restoration.
+### [Dates and loan lookup](#domain-dates-and-loan-lookup)
 
-- [`create_tranche_history`](#create-tranche-history)
-- [`table_log_operation`](#table-log-operation)
-- [`delete_tranche`](#delete-tranche)
-- [`do_delete_operation`](#do-delete-operation)
+Retrieves loans and calculates processing, payment, and overdue dates.
 
-### Integration and validation
+**Procedures**
 
-APEX view integration and tranche plan consistency checks.
 
-- [`apex_krd2204_2_view`](#apex-krd2204-2-view)
-- [`get_plan_error`](#get-plan-error)
-- [`do_plan_control`](#do-plan-control)
+### [History and reversal](#domain-history-and-reversal)
+
+Records tranche movements and restores transaction-related state.
+
+**Procedures**
+
+
+### [Integration and validation](#domain-integration-and-validation)
+
+Exposes APEX data and validates tranche repayment-plan consistency.
+
+**Procedures**
+
 
 ---
 
-## Public API details
-
+<a id="domain-tranche-lifecycle"></a>
 ## Tranche lifecycle
 
-Creation, execution and consolidation of tranche records.
+Creates, executes, and consolidates loan tranches.
 
 <a id="do-create-tranche"></a>
+#### do_create_tranche
 
-### do_create_tranche**Procedure · Lifecycle.** Executes CREATE/DELETE tranche operation through KRD2204.
+**Type:** Procedure
+
+**Description**
+
+In CREATE mode, looks up `KRD_TEKLIF_DETAY` by `MUKAVELE_NO`, requires tranche enablement and mandatory inputs, and resolves a missing interest commission via `LOAN_API.get_amount_by_range` for `BY_RANGE` loans. Stages a `TRANCHE` operation through `APEX_KRD2204_0_API_P`, calls KRD2204 validation, then execution. DELETE mode retrieves `TRN_ID` from `GLBL_TRANSACTION` by transaction FID and deletes the staged operation before running KRD2204 execution.
 
 **Signature**
 
@@ -99,21 +91,34 @@ procedure do_create_tranche(p_contract_no    varchar2 default null,
                               p_tx_fid         in out number);
 ```
 
-**Business logic.** CREATE checks contract/type/amount, resolves loan by contract, requires tranche flag, optionally derives interest commission using loan_api.get_amount_by_range for BY_RANGE loans. Stages APEX KRD2204 operation then validates and executes. DELETE locates transaction operation ID and removes staged operation before execution. Transaction ID is IN OUT.
+**Parameters**
 
-**Data access.** `KRD_TEKLIF_DETAY`, `GLBL_TRANSACTION`
+| Parameter | Mode | Meaning |
+|---|---|---|
+| `p_contract_no` | IN | Loan contract number used to locate the loan. |
+| `p_tranche_type` | IN | Tranche type supplied for creation. |
+| `p_tracnhe_term` | IN | Tranche term supplied for creation (spelling follows package specification). |
+| `p_tranche_amount` | IN | Requested tranche amount. |
+| `p_int_com_amount` | IN | Interest commission amount; may be derived for BY_RANGE loans. |
+| `p_trn_type` | IN | History change mode (I/U/D) or requested operation mode. |
+| `p_tx_fid` | IN OUT | Transaction identifier; IN OUT when a new identifier may be returned. |
 
-**Important calls.** `loan_api.get_amount_by_range`, `krd2204_0_api.justdoit`
+**Dependencies:** [Dependency register](loan-tranche-dependencies.md).
 
-**Validation and outcomes.** In Creation this parameteres cant be p_contract_no or p_tranche_type or p_tranche_amount null!; Does not find loan in [krd_teklif_detay] with contract_no [; Loan [with_tranche_info_yn] is [N], you can not do this operation!; Error encountered in search of tx_fid in glbl_transaction
+**Errors:** [Verified business/error conditions](loan-tranche-error-handling.md).
 
-**Source location:** supplied package body, lines 967–1057.
+*Source: supplied package body, lines 967–1057.*
 
-[↑ API index](#api-index) · [← Overview](loan-tranche-api.md)
+[↑ API Index](#api-index) · [↑ Functional area](#domain-tranche-lifecycle)
 
 <a id="create-tranche"></a>
+#### create_tranche
 
-### create_tranche**Procedure · Lifecycle.** Creates tranche and its repayment records.
+**Type:** Procedure
+
+**Description**
+
+Creates tranche and its repayment records. Loads KRD_ODEME_PLAN, tranche parameters and tranche type/term; checks configuration, creates base tranche values, generates schedule through loan_api.create_schedule and writes tranche master and payment-plan rows.
 
 **Signature**
 
@@ -127,21 +132,34 @@ procedure create_tranche(p_doc_no         in varchar2,
                            p_date           in date);
 ```
 
-**Business logic.** Loads KRD_ODEME_PLAN, tranche parameters and tranche type/term; checks configuration, creates base tranche values, generates schedule through loan_api.create_schedule and writes tranche master and payment-plan rows.
+**Parameters**
 
-**Data access.** `KRD_ODEME_PLAN`, `LOAN_TRANCHE_PARAMETERS`, `LOAN_TRANCHE_INFO`, `LOAN_TRANCHE_PAYMENT_PLAN`, `ODEME_PLAN_TMP`, `LOAN_TRANCHE_OPERATION_HISTORY`
+| Parameter | Mode | Meaning |
+|---|---|---|
+| `p_doc_no` | IN | Loan document identifier; limits processing to the selected loan when supplied. |
+| `p_tranche_type` | IN | Tranche type supplied for creation. |
+| `p_tracnhe_term` | IN | Tranche term supplied for creation (spelling follows package specification). |
+| `p_tranche_amount` | IN | Requested tranche amount. |
+| `p_int_amount` | IN | Supplied number parameter used by this operation. |
+| `p_tx_fid` | IN | Transaction identifier; IN OUT when a new identifier may be returned. |
+| `p_date` | IN | Effective processing date (default: logical system date where declared). |
 
-**Important calls.** `loan_api.get_acc_type_by_status`, `loan_api.create_schedule`, `loan_api.get_stop_ratio_info`
+**Dependencies:** [Dependency register](loan-tranche-dependencies.md).
 
-**Validation and outcomes.** Can not find info in [krd_odeme_plan] with doc_no [; Cannot find requirments in [loan_tranche_pr] with Combination no [; More than one tranche found for loan document number [; Unexpected error retrieving tranche for loan document number [
+**Errors:** [Verified business/error conditions](loan-tranche-error-handling.md).
 
-**Source location:** supplied package body, lines 3421–3973.
+*Source: supplied package body, lines 3421–3973.*
 
-[↑ API index](#api-index) · [← Overview](loan-tranche-api.md)
+[↑ API Index](#api-index) · [↑ Functional area](#domain-tranche-lifecycle)
 
 <a id="do-merge-tranche"></a>
+#### do_merge_tranche
 
-### do_merge_tranche**Procedure · Lifecycle.** Combines tranche balances and schedules.
+**Type:** Procedure
+
+**Description**
+
+Selects tranche records whose accumulated balance buckets are positive, `MERGE_DATE <= p_date`, and `MAIN_TRANCHE_NO IS NULL`; joins active loan master data and optionally narrows to `p_doc_no`. For each eligible tranche it obtains the base `KRD_ODEME_PLAN` and the main tranche (`TRANCHE_NO = MAIN_TRANCHE_NO`), validates uniqueness, logs the operation, and applies consolidation and schedule-related changes.
 
 **Signature**
 
@@ -150,25 +168,36 @@ procedure do_merge_tranche(p_doc_no varchar2 default null,
                              p_date   date default glbl.getsysdate);
 ```
 
-**Business logic.** Uses loan master schedule and existing tranche data to validate merge scenario, consolidate amounts and adjust repayment schedules, including generated temporary plan and history; guards against ambiguous tranche states.
+**Parameters**
 
-**Data access.** `LOAN_TRANCHE_INFO`, `KRD_ODEME_PLAN`, `LOAN_TRANCHE_PAYMENT_PLAN`, `ODEME_PLAN_TMP`
+| Parameter | Mode | Meaning |
+|---|---|---|
+| `p_doc_no` | IN | Loan document identifier; limits processing to the selected loan when supplied. |
+| `p_date` | IN | Effective processing date (default: logical system date where declared). |
 
-**Important calls.** `loan_api.get_acc_type_by_status`, `loan_api.create_schedule`, `loan_api.get_stop_ratio_info`, `loan_api.do_plan_control`, `loan_api.create_loan_history`, `loan_api.add_info_tab`, `loan_api.add_info_rec`
+**Dependencies:** [Dependency register](loan-tranche-dependencies.md).
 
-**Validation and outcomes.** Can not find info in [krd_odeme_plan] with doc_no [; More than one tranche found for loan document number [; Unexpected error retrieving tranche for loan document number [
+**Errors:** [Verified business/error conditions](loan-tranche-error-handling.md).
 
-**Source location:** supplied package body, lines 3124–3421.
+*Source: supplied package body, lines 3124–3421.*
 
-[↑ API index](#api-index) · [← Overview](loan-tranche-api.md)
+[↑ API Index](#api-index) · [↑ Functional area](#domain-tranche-lifecycle)
 
+---
+
+<a id="domain-payment-schedules"></a>
 ## Payment schedules
 
-Generation, conversion and calculation of tranche repayment schedules.
+Creates, converts, and evaluates tranche-level repayment plans.
 
 <a id="do-payment-plan-creation"></a>
+#### do_payment_plan_creation
 
-### do_payment_plan_creation**Procedure · Payment schedules.** Creates payment plans for eligible tranches.
+**Type:** Procedure
+
+**Description**
+
+Creates payment plans for eligible tranches. Selects tranche-enabled loans in specified branch/date/document scope and iterates tranche info. Uses configured schedule creation type and temporary schedule rows to produce payment-plan entries, transaction metadata and history.
 
 **Signature**
 
@@ -179,21 +208,31 @@ procedure do_payment_plan_creation(p_date   date default glbl.getsysdate,
                                      p_doc_no varchar2 default null);
 ```
 
-**Business logic.** Selects tranche-enabled loans in specified branch/date/document scope and iterates tranche info. Uses configured schedule creation type and temporary schedule rows to produce payment-plan entries, transaction metadata and history.
+**Parameters**
 
-**Data access.** `KRD_TEKLIF_DETAY`, `LOAN_TRANCHE_INFO`, `LOAN_TRANCHE_PAYMENT_PLAN`, `ODEME_PLAN_TMP`
+| Parameter | Mode | Meaning |
+|---|---|---|
+| `p_date` | IN | Effective processing date (default: logical system date where declared). |
+| `p_min_id` | IN | Lower branch/processing range boundary. |
+| `p_max_id` | IN | Upper branch/processing range boundary. |
+| `p_doc_no` | IN | Loan document identifier; limits processing to the selected loan when supplied. |
 
-**Important calls.** `glbl_tarih.sonraki_isgunu`, `loan_api.get_trn_caller_id`, `trn_broker.register_eod`, `loan_tranche_api.calculate_date`, `loan_api.create_schedule`, `loan_api.get_stop_ratio_info`, `loan_api.get_acc_type_by_status`, `loan_api.finalize_addtional_process`, `loan_api.create_loan_history`, `loan_api.add_info_tab`
+**Dependencies:** [Dependency register](loan-tranche-dependencies.md).
 
-**Validation and outcomes.** schedule_creation_type [; Error Doc_no [
+**Errors:** [Verified business/error conditions](loan-tranche-error-handling.md).
 
-**Source location:** supplied package body, lines 3982–4215.
+*Source: supplied package body, lines 3982–4215.*
 
-[↑ API index](#api-index) · [← Overview](loan-tranche-api.md)
+[↑ API Index](#api-index) · [↑ Functional area](#domain-payment-schedules)
 
 <a id="do-payment-plan-conversion"></a>
+#### do_payment_plan_conversion
 
-### do_payment_plan_conversion**Procedure · Payment schedules.** Converts payment schedules to a configured type.
+**Type:** Procedure
+
+**Description**
+
+Converts payment schedules to a configured type. Locates active loans requiring conversion, resolves pending product schedule mapping from PKRD_ODETIP_PR and LOAN_SCHEDULE_TYPES, regenerates schedule and updates tranche plan amounts/dates with logging and transaction context.
 
 **Signature**
 
@@ -202,21 +241,29 @@ procedure do_payment_plan_conversion(p_date   date default glbl.getsysdate,
                                        p_doc_no varchar2 default null);
 ```
 
-**Business logic.** Locates active loans requiring conversion, resolves pending product schedule mapping from PKRD_ODETIP_PR and LOAN_SCHEDULE_TYPES, regenerates schedule and updates tranche plan amounts/dates with logging and transaction context.
+**Parameters**
 
-**Data access.** `KRD_TEKLIF_DETAY`, `PKRD_ODETIP_PR`, `LOAN_SCHEDULE_TYPES`, `LOAN_TRANCHE_INFO`, `LOAN_TRANCHE_PAYMENT_PLAN`, `ODEME_PLAN_TMP`, `LOAN_ACC_TYPES_PR`, `SET`
+| Parameter | Mode | Meaning |
+|---|---|---|
+| `p_date` | IN | Effective processing date (default: logical system date where declared). |
+| `p_doc_no` | IN | Loan document identifier; limits processing to the selected loan when supplied. |
 
-**Important calls.** `glbl_tarih.sonraki_isgunu`, `loan_api.get_trn_caller_id`, `trn_broker.register_eod`, `loan_api.add_column_update`, `loan_api.create_schedule`, `loan_api.get_stop_ratio_info`, `glbl_faiz.day_count_basis_new`, `loan_api.get_acc_type_by_status`, `loan_api.finalize_addtional_process`, `loan_api.create_loan_history`
+**Dependencies:** [Dependency register](loan-tranche-dependencies.md).
 
-**Validation and outcomes.** No schedule conversion data found for product code ; Multiple schedule conversion records found for product code ; An unexpected error occurred while fetching schedule conversion data for product code ; No loan schedule found for schedule number 
+**Errors:** [Verified business/error conditions](loan-tranche-error-handling.md).
 
-**Source location:** supplied package body, lines 4215–4472.
+*Source: supplied package body, lines 4215–4472.*
 
-[↑ API index](#api-index) · [← Overview](loan-tranche-api.md)
+[↑ API Index](#api-index) · [↑ Functional area](#domain-payment-schedules)
 
 <a id="get-plan-payment-amount"></a>
+#### get_plan_payment_amount
 
-### get_plan_payment_amount**Function · Payments.** Returns outstanding scheduled amount for a loan tranche.
+**Type:** Function
+
+**Description**
+
+Returns outstanding scheduled amount for a loan tranche. Aggregates unpaid plan balance by document and tranche, with optional account type and date filtering; uses tranche payment-plan rows and account-type configuration.
 
 **Signature**
 
@@ -228,21 +275,31 @@ function get_plan_payment_amount(p_doc_no     in varchar2,
     return number;
 ```
 
-**Business logic.** Aggregates unpaid plan balance by document and tranche, with optional account type and date filtering; uses tranche payment-plan rows and account-type configuration.
+**Parameters**
 
-**Data access.** `LOAN_TRANCHE_PAYMENT_PLAN`, `LOAN_ACC_TYPES_PR`
+| Parameter | Mode | Meaning |
+|---|---|---|
+| `p_doc_no` | IN | Loan document identifier; limits processing to the selected loan when supplied. |
+| `p_tranche_no` | IN | Tranche identifier to select or update. |
+| `p_date` | IN | Effective processing date (default: logical system date where declared). |
+| `p_acc_type` | IN | Account type filter or target account classification. |
 
-**Important calls.** No cross-package call extracted.
+**Dependencies:** [Dependency register](loan-tranche-dependencies.md).
 
-**Validation and outcomes.** Refer to the implementation and calling transaction for failure handling; no explicit direct R-message extracted.
+**Errors:** [Verified business/error conditions](loan-tranche-error-handling.md).
 
-**Source location:** supplied package body, lines 4472–4506.
+*Source: supplied package body, lines 4472–4506.*
 
-[↑ API index](#api-index) · [← Overview](loan-tranche-api.md)
+[↑ API Index](#api-index) · [↑ Functional area](#domain-payment-schedules)
 
 <a id="get-annuity-amount"></a>
+#### get_Annuity_Amount
 
-### get_Annuity_Amount**Function · Payments.** Returns planned annuity for loan tranche.
+**Type:** Function
+
+**Description**
+
+Returns planned annuity for loan tranche. Queries tranche payment-plan amounts and applies p_return_type selection (default NO_ZERO) when deriving numeric annuity.
 
 **Signature**
 
@@ -253,25 +310,37 @@ Function get_Annuity_Amount(p_Doc_No      In Varchar2,
     Return Number;
 ```
 
-**Business logic.** Queries tranche payment-plan amounts and applies p_return_type selection (default NO_ZERO) when deriving numeric annuity.
+**Parameters**
 
-**Data access.** `LOAN_TRANCHE_PAYMENT_PLAN`
+| Parameter | Mode | Meaning |
+|---|---|---|
+| `p_Doc_No` | IN | Loan document identifier; limits processing to the selected loan when supplied. |
+| `p_tranche_no` | IN | Tranche identifier to select or update. |
+| `p_return_type` | IN | Controls annuity result selection (default NO_ZERO). |
 
-**Important calls.** No cross-package call extracted.
+**Dependencies:** [Dependency register](loan-tranche-dependencies.md).
 
-**Validation and outcomes.** Refer to the implementation and calling transaction for failure handling; no explicit direct R-message extracted.
+**Errors:** [Verified business/error conditions](loan-tranche-error-handling.md).
 
-**Source location:** supplied package body, lines 2832–2865.
+*Source: supplied package body, lines 2832–2865.*
 
-[↑ API index](#api-index) · [← Overview](loan-tranche-api.md)
+[↑ API Index](#api-index) · [↑ Functional area](#domain-payment-schedules)
 
+---
+
+<a id="domain-payments-and-allocation"></a>
 ## Payments and allocation
 
-Allocation of loan-account payments among tranches and operation execution.
+Allocates incoming funds and executes tranche-specific payments.
 
 <a id="distribute-payments-between-tranches"></a>
+#### distribute_payments_between_tranches
 
-### distribute_payments_between_tranches**Procedure · APEX/allocation.** Splits payment requests across tranche-specific accounts.
+**Type:** Procedure
+
+**Description**
+
+Combines unpaid payable payment-plan rows with tranche balance components and account-type settings. It orders candidate amounts by configured allocation order, due date and tranche/payment priorities, then assigns positive requested payments subject to each candidate's remaining amount. The output associates allocations with tranche numbers and marks future MAIN payments for schedule updates.
 
 **Signature**
 
@@ -282,21 +351,31 @@ procedure distribute_payments_between_tranches(p_doc_no       in varchar2,
                                                  p_final_list   out loan_api.g_loan_accounts_tab);
 ```
 
-**Business logic.** For positive incoming payment lines combines unpaid plan entries with unpivoted tranche balances, filters payable account groups, then sorts by allocation order, plan date, tranche priority, tranche date and number. Caps allocations to planned remainder, sets future MAIN schedule-update flag and returns tranche-numbered rows.
+**Parameters**
 
-**Data access.** `LOAN_TRANCHE_PAYMENT_PLAN`, `GAIA.LOAN_TRANCHE_PAYMENT_PLAN`, `LOAN_TRANCHE_INFO`
+| Parameter | Mode | Meaning |
+|---|---|---|
+| `p_doc_no` | IN | Loan document identifier; limits processing to the selected loan when supplied. |
+| `p_loan_status` | IN | Loan status governing processing rules. |
+| `p_payment_list` | IN | Payment account collection input. |
+| `p_final_list` | OUT | Output collection of tranche-assigned payment rows. |
 
-**Important calls.** `loan_api.g_loan_accounts_tab`, `loan_api.get_acc_type_by_status`, `loan_api.g_loan_accounts_rec_type`
+**Dependencies:** [Dependency register](loan-tranche-dependencies.md).
 
-**Validation and outcomes.** Refer to the implementation and calling transaction for failure handling; no explicit direct R-message extracted.
+**Errors:** [Verified business/error conditions](loan-tranche-error-handling.md).
 
-**Source location:** supplied package body, lines 4506–4711.
+*Source: supplied package body, lines 4506–4711.*
 
-[↑ API index](#api-index) · [← Overview](loan-tranche-api.md)
+[↑ API Index](#api-index) · [↑ Functional area](#domain-payments-and-allocation)
 
 <a id="generate-allocated-payment-list"></a>
+#### generate_allocated_payment_list
 
-### generate_allocated_payment_list**Procedure · APEX/allocation.** Produces allocation records for one tranche.
+**Type:** Procedure
+
+**Description**
+
+Produces allocation records for one tranche. Uses requested amount, operation, loan status and tranche account list; delegates shared allocation ordering to loan_api.generate_allocated_payment_list and builds tranche-specific resulting account collection.
 
 **Signature**
 
@@ -310,21 +389,34 @@ procedure generate_allocated_payment_list(p_doc_no        in varchar2,
                                             p_payment_list  out loan_api.g_loan_accounts_tab);
 ```
 
-**Business logic.** Uses requested amount, operation, loan status and tranche account list; delegates shared allocation ordering to loan_api.generate_allocated_payment_list and builds tranche-specific resulting account collection.
+**Parameters**
 
-**Data access.** No direct table access confirmed in this method.
+| Parameter | Mode | Meaning |
+|---|---|---|
+| `p_doc_no` | IN | Loan document identifier; limits processing to the selected loan when supplied. |
+| `p_tranche_no` | IN | Tranche identifier to select or update. |
+| `p_oper_type` | IN | Operation category or operation identifier. |
+| `p_loan_status` | IN | Loan status governing processing rules. |
+| `p_pym_amount` | IN | Payment amount to allocate. |
+| `p_loan_accounts` | IN | Loan-account records used or updated by processing. |
+| `p_payment_list` | OUT | Payment account collection input. |
 
-**Important calls.** `loan_api.generate_allocated_payment_list`, `loan_api.g_loan_accounts_tab`, `loan_api.g_loan_accounts_rec_type`
+**Dependencies:** [Dependency register](loan-tranche-dependencies.md).
 
-**Validation and outcomes.** Refer to the implementation and calling transaction for failure handling; no explicit direct R-message extracted.
+**Errors:** [Verified business/error conditions](loan-tranche-error-handling.md).
 
-**Source location:** supplied package body, lines 4711–4811.
+*Source: supplied package body, lines 4711–4811.*
 
-[↑ API index](#api-index) · [← Overview](loan-tranche-api.md)
+[↑ API Index](#api-index) · [↑ Functional area](#domain-payments-and-allocation)
 
 <a id="do-tranche-operation"></a>
+#### do_tranche_operation
 
-### do_tranche_operation**Procedure · APEX/allocation.** Orchestrates allocate/payment operation on tranche.
+**Type:** Procedure
+
+**Description**
+
+Orchestrates allocate/payment operation on tranche. Accepts IN OUT account and tranche collections, dispatches ALLOCATE or PAYMENT processing, synchronizes tranche amounts and optional schedule-update parameters, reporting which schedules require update; validates operation type and total allocation.
 
 **Signature**
 
@@ -342,25 +434,45 @@ procedure do_tranche_operation(p_oper_type           in varchar2,
                                  p_schedule_parametrs  create_schedule_parametrs%rowtype default null);
 ```
 
-**Business logic.** Accepts IN OUT account and tranche collections, dispatches ALLOCATE or PAYMENT processing, synchronizes tranche amounts and optional schedule-update parameters, reporting which schedules require update; validates operation type and total allocation.
+**Parameters**
 
-**Data access.** `APEX_KRD2204_2_VIEW`, `LOAN_SCHEDULE_UPDATE_TYPES`, `LOAN_TRANCHE_INFO`
+| Parameter | Mode | Meaning |
+|---|---|---|
+| `p_oper_type` | IN | Operation category or operation identifier. |
+| `p_tx_fid` | IN | Transaction identifier; IN OUT when a new identifier may be returned. |
+| `p_doc_no` | IN | Loan document identifier; limits processing to the selected loan when supplied. |
+| `p_tranche_no` | IN | Tranche identifier to select or update. |
+| `p_trn_amount` | IN | Operation amount. |
+| `p_schedule_upd_type` | IN OUT | Schedule update type, which may be modified. |
+| `p_has_schedule_update` | OUT | Outputs whether a schedule update is required. |
+| `p_loan_accounts` | IN OUT | Loan-account records used or updated by processing. |
+| `p_loan_tranche` | IN OUT | Tranche collection updated by the operation. |
+| `p_process` | IN | Processing stage (default ALLOCATE). |
+| `p_schedule_parametrs` | IN | Supplied create_schedule_parametrs%rowtype parameter used by this operation. |
 
-**Important calls.** `krd2204_0_api.init_global_variables`, `loan_api.get_acc_type_by_status`
+**Dependencies:** [Dependency register](loan-tranche-dependencies.md).
 
-**Validation and outcomes.** alocated trn amount for [; [p_opet_type] is wrong! Should be [ALLOCATE] [PAYMENT]!
+**Errors:** [Verified business/error conditions](loan-tranche-error-handling.md).
 
-**Source location:** supplied package body, lines 5335–5565.
+*Source: supplied package body, lines 5335–5565.*
 
-[↑ API index](#api-index) · [← Overview](loan-tranche-api.md)
+[↑ API Index](#api-index) · [↑ Functional area](#domain-payments-and-allocation)
 
+---
+
+<a id="domain-interest-and-penalties"></a>
 ## Interest and penalties
 
-Interest calculations and overdue penalty calculation inputs.
+Calculates interest and derives penalty calculation inputs.
 
 <a id="do-int-calculation"></a>
+#### do_int_calculation
 
-### do_int_calculation**Procedure · Interest/penalties.** Calculates interest and penalty at tranche level.
+**Type:** Procedure
+
+**Description**
+
+Calculates interest and penalty at tranche level. Filters eligible loans by date, EOD/SOD, branch, document and tranche; evaluates balances, payment dates, calculation flags, product rates, overdue statuses, stop intervals and penalties. Posts generated amounts and stores calculation/history results.
 
 **Signature**
 
@@ -373,21 +485,33 @@ procedure do_int_calculation(p_min_id     number default 0,
                                p_date       in date default glbl.getsysdate);
 ```
 
-**Business logic.** Filters eligible loans by date, EOD/SOD, branch, document and tranche; evaluates balances, payment dates, calculation flags, product rates, overdue statuses, stop intervals and penalties. Posts generated amounts and stores calculation/history results.
+**Parameters**
 
-**Data access.** `LOAN_PAYMENT_DATES_LIST`, `KRD_TEKLIF_DETAY`, `LOAN_TRANCHE_PAYMENT_PLAN`, `LOAN_ACC_TYPES_PR`, `EOD_PROGRAMS_EXCEPTION`, `IBS.ONLINE_CRD_BLOCK`, `LOAN_TRANCHE_INFO`, `LOAN_STOP_RATIO_INFO`, `LOAN_TRANCHE_OPERATION_HISTORY`, `CS_ACCOUNT`
+| Parameter | Mode | Meaning |
+|---|---|---|
+| `p_min_id` | IN | Lower branch/processing range boundary. |
+| `p_max_id` | IN | Upper branch/processing range boundary. |
+| `p_doc_no` | IN | Loan document identifier; limits processing to the selected loan when supplied. |
+| `p_tranche_no` | IN | Tranche identifier to select or update. |
+| `p_eod_sod` | IN | End/start-of-day processing indicator. |
+| `p_date` | IN | Effective processing date (default: logical system date where declared). |
 
-**Important calls.** `glbl_tarih.sonraki_isgunu`, `loan_api.g_entries_list_tab`, `glbl_tarih.onceki_isgunu`, `loan_api.get_trn_caller_id`, `loan_api.g_date_tab_type`, `loan_api.get_gl_value`, `loan_api.get_interest_calc_dates`, `loan_api.get_interest_calc_info`, `glbl_faiz.days_between2`, `loan_tranche_api.calculate_date`
+**Dependencies:** [Dependency register](loan-tranche-dependencies.md).
 
-**Validation and outcomes.** is_int_calc or is_pen_calc columns in krd_teklif_detay table is null! Please check...; The maximum penalty amount listed for this product ; Non calculated days of loan {; Too many rows found in loan_flow_ratio_info table, for date: 
+**Errors:** [Verified business/error conditions](loan-tranche-error-handling.md).
 
-**Source location:** supplied package body, lines 1777–2658.
+*Source: supplied package body, lines 1777–2658.*
 
-[↑ API index](#api-index) · [← Overview](loan-tranche-api.md)
+[↑ API Index](#api-index) · [↑ Functional area](#domain-interest-and-penalties)
 
 <a id="do-int-calculation-by-range"></a>
+#### do_int_calculation_by_range
 
-### do_int_calculation_by_range**Procedure · Interest/penalties.** Runs range-based interest calculation for eligible tranche loans.
+**Type:** Procedure
+
+**Description**
+
+Its loan cursor joins `KRD_TEKLIF_DETAY` and `KRD_TESIS`, selects active tranche-enabled loans with `INT_CALC_METHOD = 'BY_RANGE'`, excludes rows already processed for the effective date, applies document/branch filters, and requires nonzero MAIN/OVD_MAIN exposure in `CS_ACCOUNT` joined to `LOAN_ACC_TYPES_PR`. It then iterates tranche calculation records and produces the corresponding interest/accounting movements.
 
 **Signature**
 
@@ -398,21 +522,31 @@ Procedure do_int_calculation_by_range(p_min_id number default null,
                                         p_date   in date default glbl.getsysdate);
 ```
 
-**Business logic.** Selects active tranche-enabled BY_RANGE loans not processed on date, matching document/branch range and having nonzero main exposure. Iterates tranche balances, accounts for stop periods, computes applicable interest, posts entries and updates history/calculation state.
+**Parameters**
 
-**Data access.** `KRD_TEKLIF_DETAY`, `CS_ACCOUNT`, `LOAN_TRANCHE_INFO`, `LOAN_STOP_RATIO_INFO`, `LOAN_TRANCHE_PAYMENT_PLAN`
+| Parameter | Mode | Meaning |
+|---|---|---|
+| `p_min_id` | IN | Lower branch/processing range boundary. |
+| `p_max_id` | IN | Upper branch/processing range boundary. |
+| `p_doc_no` | IN | Loan document identifier; limits processing to the selected loan when supplied. |
+| `p_date` | IN | Effective processing date (default: logical system date where declared). |
 
-**Important calls.** `loan_api.g_entries_list_tab`, `loan_api.get_trn_caller_id`, `glbl_tarih.sonraki_isgunu`, `loan_api.get_gl_acc_from_matrix`, `loan_tranche_api.calculate_date`, `loan_api.get_amount_by_range`, `loan_tranche_api.create_tranche_history`, `loan_report_api.get_loan_message`, `loan_api.do_journal_entry`, `loan_api.add_column_update`
+**Dependencies:** [Dependency register](loan-tranche-dependencies.md).
 
-**Validation and outcomes.** Status of loan is WOFF, its not allowed operation, Doc_no{; Int amount cant be negative! {; Error encountered in loan_tranche_api.do_int_calculation_by_range operation for loan, doc_no: 
+**Errors:** [Verified business/error conditions](loan-tranche-error-handling.md).
 
-**Source location:** supplied package body, lines 1057–1299.
+*Source: supplied package body, lines 1057–1299.*
 
-[↑ API index](#api-index) · [← Overview](loan-tranche-api.md)
+[↑ API Index](#api-index) · [↑ Functional area](#domain-interest-and-penalties)
 
 <a id="get-pen-info-for-calc"></a>
+#### get_pen_info_for_calc
 
-### get_pen_info_for_calc**Procedure · Interest/penalties.** Returns overdue principal and penalty days.
+**Type:** Procedure
+
+**Description**
+
+Returns overdue principal and penalty days. Derives overdue principal amount and overdue-day count from tranche plan records at processing date, returning both via OUT parameters and checking for negative results.
 
 **Signature**
 
@@ -424,25 +558,39 @@ procedure get_pen_info_for_calc(p_date                   in date default glbl.ge
                                   p_calculated_pen_day_cnt out number);
 ```
 
-**Business logic.** Derives overdue principal amount and overdue-day count from tranche plan records at processing date, returning both via OUT parameters and checking for negative results.
+**Parameters**
 
-**Data access.** `LOAN_TRANCHE_PAYMENT_PLAN`
+| Parameter | Mode | Meaning |
+|---|---|---|
+| `p_date` | IN | Effective processing date (default: logical system date where declared). |
+| `p_doc_no` | IN | Loan document identifier; limits processing to the selected loan when supplied. |
+| `p_tranche_no` | IN | Tranche identifier to select or update. |
+| `p_ovd_amount` | OUT | Returns overdue amount used for penalty calculation. |
+| `p_calculated_pen_day_cnt` | OUT | Returns calculated penalty day count. |
 
-**Important calls.** No cross-package call extracted.
+**Dependencies:** [Dependency register](loan-tranche-dependencies.md).
 
-**Validation and outcomes.** Overdue Main amount for penalty calculation or overdue days count is negative!
+**Errors:** [Verified business/error conditions](loan-tranche-error-handling.md).
 
-**Source location:** supplied package body, lines 1742–1777.
+*Source: supplied package body, lines 1742–1777.*
 
-[↑ API index](#api-index) · [← Overview](loan-tranche-api.md)
+[↑ API Index](#api-index) · [↑ Functional area](#domain-interest-and-penalties)
 
+---
+
+<a id="domain-overdue-and-transit"></a>
 ## Overdue and transit
 
-Overdue/transit classification, movement processing and corrective postings.
+Classifies overdue positions and applies overdue/transit corrections.
 
 <a id="get-ovd-trs-oper-type"></a>
+#### get_ovd_trs_oper_type
 
-### get_ovd_trs_oper_type**Function · Overdue/transit.** Classifies eligible payment balances as OVERDUE, TRANSIT or no movement.
+**Type:** Function
+
+**Description**
+
+First rejects negative current and overdue balances. For `WOFF`, it removes the threshold and uses the payment day as the period. At or after maturity the threshold becomes zero; an existing overdue position also replaces the configured period with the payment day. `calculate_date` determines the effective date. The subsequent CASE returns `OVERDUE` only for eligible non-overdue account groups whose due date has passed and amount exceeds the threshold; otherwise qualifying account groups can return `TRANSIT` according to the grace-in-transit flag, calculated date, and balance threshold; it may return NULL.
 
 **Signature**
 
@@ -463,21 +611,40 @@ function get_ovd_trs_oper_type(p_date               in date,
     return varchar2;
 ```
 
-**Business logic.** Rejects negative balances; adjusts grace threshold when written off or mature. Existing overdue can override configured grace period. Calls calculate_date to decide eligibility using plan date, maturity, account group, overdue amount, penalty-on-interest and grace-in-transit flags.
+**Parameters**
 
-**Data access.** No direct table access confirmed in this method.
+| Parameter | Mode | Meaning |
+|---|---|---|
+| `p_date` | IN | Effective processing date (default: logical system date where declared). |
+| `p_acc_type_group` | IN | Logical account group for overdue/transit classification. |
+| `p_plan_date` | IN | Payment plan due date. |
+| `p_balance` | IN | Current amount being classified. |
+| `p_overdue_min_amount` | IN | Minimum overdue threshold. |
+| `p_ovd_balance` | IN | Existing overdue amount. |
+| `p_loan_end_date` | IN | Loan maturity date. |
+| `p_grace_end_date` | IN | End of grace period. |
+| `p_pymt_day` | IN | Configured payment day. |
+| `p_overdue_type` | IN | Configured overdue date period type. |
+| `p_loan_status` | IN | Loan status governing processing rules. |
+| `p_is_pen_calc_on_int` | IN | Penalty-on-interest configuration flag. |
+| `p_is_grace_applied_in_trs_acc` | IN | Grace-in-transit-account configuration flag. |
 
-**Important calls.** `loan_tranche_api.calculate_date`
+**Dependencies:** [Dependency register](loan-tranche-dependencies.md).
 
-**Validation and outcomes.** Overdue amount {; Balance amount {
+**Errors:** [Verified business/error conditions](loan-tranche-error-handling.md).
 
-**Source location:** supplied package body, lines 12–104.
+*Source: supplied package body, lines 12–104.*
 
-[↑ API index](#api-index) · [← Overview](loan-tranche-api.md)
+[↑ API Index](#api-index) · [↑ Functional area](#domain-overdue-and-transit)
 
 <a id="do-overdue-transit-operation"></a>
+#### do_overdue_transit_operation
 
-### do_overdue_transit_operation**Procedure · Overdue/transit.** Applies overdue and transit transitions.
+**Type:** Procedure
+
+**Description**
+
+Applies overdue and transit transitions. Prepares MAIN and INT movement queues for selected branch/document/tranche. Reads transition decisions, account mappings and balances; adjusts tranche plan entries and creates journal/history movements for eligible items.
 
 **Signature**
 
@@ -489,21 +656,32 @@ Procedure do_overdue_transit_operation(p_min_id     number default null,
                                          p_date       in date default glbl.getsysdate);
 ```
 
-**Business logic.** Prepares MAIN and INT movement queues for selected branch/document/tranche. Reads transition decisions, account mappings and balances; adjusts tranche plan entries and creates journal/history movements for eligible items.
+**Parameters**
 
-**Data access.** `LOAN_TRANCHE_OVERDUE_TRANSIT_QUEUE`, `CS_ACCOUNT`, `LOAN_OVERDUE_MAPPING`, `LOAN_TRANCHE_PAYMENT_PLAN`, `KRD_TEKLIF_DETAY`
+| Parameter | Mode | Meaning |
+|---|---|---|
+| `p_min_id` | IN | Lower branch/processing range boundary. |
+| `p_max_id` | IN | Upper branch/processing range boundary. |
+| `p_doc_no` | IN | Loan document identifier; limits processing to the selected loan when supplied. |
+| `p_tranche_no` | IN | Tranche identifier to select or update. |
+| `p_date` | IN | Effective processing date (default: logical system date where declared). |
 
-**Important calls.** `loan_api.g_loan_accounts_tab`, `loan_api.g_entries_list_tab`, `loan_tranche_api.table_log_operation`, `loan_api.create_account`, `loan_api.get_acc_type_by_status`, `loan_api.get_trn_caller_id`, `loan_api.do_journal_entry`, `loan_api.finalize_addtional_process`, `loan_api.create_loan_history`, `loan_api.add_info_tab`
+**Dependencies:** [Dependency register](loan-tranche-dependencies.md).
 
-**Validation and outcomes.** Loan product code not found in pkrd_turkod_pr table!
+**Errors:** [Verified business/error conditions](loan-tranche-error-handling.md).
 
-**Source location:** supplied package body, lines 1299–1742.
+*Source: supplied package body, lines 1299–1742.*
 
-[↑ API index](#api-index) · [← Overview](loan-tranche-api.md)
+[↑ API Index](#api-index) · [↑ Functional area](#domain-overdue-and-transit)
 
 <a id="ovd-amount-correction"></a>
+#### ovd_amount_correction
 
-### ovd_amount_correction**Procedure · Overdue/transit.** Corrects regular versus overdue principal allocation.
+**Type:** Procedure
+
+**Description**
+
+Processes active tranche-enabled loans with `IS_PEN_CALC_ON_INT = 'Y'` and maturity on or after the calculation date. For enabled conversions it resolves a unique `PENDING` product schedule, creates schedule output, and derives the overdue principal cap. It compares overdue principal against overdue interest/cap, logs pre-change tranche and plan state, moves amounts between MAIN and OVD_MAIN, allocates overdue plan amounts by outstanding overdue-interest dates, posts debit/credit entries via `LOAN_API`, records history, then calls `do_plan_control`.
 
 **Signature**
 
@@ -513,25 +691,37 @@ procedure ovd_amount_correction(p_date          in date,
                                   p_caller_tx_fid number);
 ```
 
-**Business logic.** Filters active tranche loans with interest penalty enabled and not past maturity. Resolves pending schedule conversion if enabled, checks tranche cardinality, computes correction against overdue interest and temporary schedule amount, adjusts payment-plan rows, writes tranche operation history, generates debit/credit accounting entries and calls do_plan_control.
+**Parameters**
 
-**Data access.** `KRD_TEKLIF_DETAY`, `PKRD_ODETIP_PR`, `LOAN_SCHEDULE_TYPES`, `LOAN_TRANCHE_INFO`, `LOAN_TRANCHE_PAYMENT_PLAN`, `ODEME_PLAN_TMP`, `CS_ACCOUNT`
+| Parameter | Mode | Meaning |
+|---|---|---|
+| `p_date` | IN | Effective processing date (default: logical system date where declared). |
+| `p_doc_no` | IN | Loan document identifier; limits processing to the selected loan when supplied. |
+| `p_caller_tx_fid` | IN | Originating transaction identifier for audit linkage. |
 
-**Important calls.** `loan_api.g_entries_list_tab`, `loan_api.get_trn_caller_id`, `loan_api.create_schedule`, `loan_api.get_stop_ratio_info`, `loan_tranche_api.create_tranche_history`, `loan_api.get_acc_type_by_status`, `loan_api.do_journal_entry`, `loan_api.create_loan_history`, `loan_api.add_info_tab`, `loan_api.add_info_rec`
+**Dependencies:** [Dependency register](loan-tranche-dependencies.md).
 
-**Validation and outcomes.** No schedule conversion data found for product code ; Multiple schedule conversion records found for product code ; An unexpected error occurred while fetching schedule conversion data for product code ; No loan schedule found for schedule number 
+**Errors:** [Verified business/error conditions](loan-tranche-error-handling.md).
 
-**Source location:** supplied package body, lines 311–703.
+*Source: supplied package body, lines 311–703.*
 
-[↑ API index](#api-index) · [← Overview](loan-tranche-api.md)
+[↑ API Index](#api-index) · [↑ Functional area](#domain-overdue-and-transit)
 
+---
+
+<a id="domain-dates-and-loan-lookup"></a>
 ## Dates and loan lookup
 
-Loan record retrieval and configurable payment/overdue dates.
+Retrieves loans and calculates processing, payment, and overdue dates.
 
 <a id="get-loan-info"></a>
+#### get_loan_info
 
-### get_loan_info**Function · Lookup/dates.** Reads loan master details.
+**Type:** Function
+
+**Description**
+
+Reads loan master details. Finds matching KRD_TEKLIF_DETAY row for document and returns %ROWTYPE; explicitly raises application error on lookup failure.
 
 **Signature**
 
@@ -540,21 +730,28 @@ function get_loan_info(p_doc_no in varchar2)
     return krd_teklif_detay%rowtype;
 ```
 
-**Business logic.** Finds matching KRD_TEKLIF_DETAY row for document and returns %ROWTYPE; explicitly raises application error on lookup failure.
+**Parameters**
 
-**Data access.** `KRD_TEKLIF_DETAY`
+| Parameter | Mode | Meaning |
+|---|---|---|
+| `p_doc_no` | IN | Loan document identifier; limits processing to the selected loan when supplied. |
 
-**Important calls.** No cross-package call extracted.
+**Dependencies:** [Dependency register](loan-tranche-dependencies.md).
 
-**Validation and outcomes.** Refer to the implementation and calling transaction for failure handling; no explicit direct R-message extracted.
+**Errors:** [Verified business/error conditions](loan-tranche-error-handling.md).
 
-**Source location:** supplied package body, lines 2658–2676.
+*Source: supplied package body, lines 2658–2676.*
 
-[↑ API index](#api-index) · [← Overview](loan-tranche-api.md)
+[↑ API Index](#api-index) · [↑ Functional area](#domain-dates-and-loan-lookup)
 
 <a id="calculate-date"></a>
+#### calculate_date
 
-### calculate_date**Function · Lookup/dates.** Computes configured overdue or payment date.
+**Type:** Function
+
+**Description**
+
+Computes configured overdue or payment date. Reads LOAN_TRANCHE_PERIODS rules; derives date using processing/plan date, grace period, loan maturity and payment day. p_configure_date determines final payment-day adjustment; unsupported types cause errors.
 
 **Signature**
 
@@ -568,21 +765,33 @@ function calculate_date(p_period_type    varchar2,
     return date;
 ```
 
-**Business logic.** Reads LOAN_TRANCHE_PERIODS rules; derives date using processing/plan date, grace period, loan maturity and payment day. p_configure_date determines final payment-day adjustment; unsupported types cause errors.
+**Parameters**
 
-**Data access.** `IN_LIST`, `LOAN_TRANCHE_PERIODS`
+| Parameter | Mode | Meaning |
+|---|---|---|
+| `p_period_type` | IN | Configured rule for calculating the date. |
+| `p_trn_date` | IN | Operation transaction date. |
+| `p_grace_end_date` | IN | End of grace period. |
+| `p_loan_end_date` | IN | Loan maturity date. |
+| `p_pymt_day` | IN | Configured payment day. |
+| `p_configure_date` | IN | Date normalization mode (default PYMT_DATE). |
 
-**Important calls.** No cross-package call extracted.
+**Dependencies:** [Dependency register](loan-tranche-dependencies.md).
 
-**Validation and outcomes.** [p_configure_date]{; Can not find period type [; Something went wrong when execute [calculate_date] - {
+**Errors:** [Verified business/error conditions](loan-tranche-error-handling.md).
 
-**Source location:** supplied package body, lines 2865–2969.
+*Source: supplied package body, lines 2865–2969.*
 
-[↑ API index](#api-index) · [← Overview](loan-tranche-api.md)
+[↑ API Index](#api-index) · [↑ Functional area](#domain-dates-and-loan-lookup)
 
 <a id="get-ovd-date"></a>
+#### get_ovd_date
 
-### get_ovd_date**Function · Lookup/dates.** Finds effective overdue date for account type.
+**Type:** Function
+
+**Description**
+
+Finds effective overdue date for account type. Evaluates loan maturity, unpaid tranche plan dates and account balances for requested document/account type/date; returns applicable due/overdue boundary.
 
 **Signature**
 
@@ -592,21 +801,30 @@ Function get_ovd_date(p_doc_no   varchar2,
                         p_date     date default glbl.getsysdate) return date;
 ```
 
-**Business logic.** Evaluates loan maturity, unpaid tranche plan dates and account balances for requested document/account type/date; returns applicable due/overdue boundary.
+**Parameters**
 
-**Data access.** `KRD_TEKLIF_DETAY`, `LOAN_TRANCHE_PAYMENT_PLAN`, `CS_ACCOUNT`
+| Parameter | Mode | Meaning |
+|---|---|---|
+| `p_doc_no` | IN | Loan document identifier; limits processing to the selected loan when supplied. |
+| `p_acc_type` | IN | Account type filter or target account classification. |
+| `p_date` | IN | Effective processing date (default: logical system date where declared). |
 
-**Important calls.** No cross-package call extracted.
+**Dependencies:** [Dependency register](loan-tranche-dependencies.md).
 
-**Validation and outcomes.** Refer to the implementation and calling transaction for failure handling; no explicit direct R-message extracted.
+**Errors:** [Verified business/error conditions](loan-tranche-error-handling.md).
 
-**Source location:** supplied package body, lines 5626–5711.
+*Source: supplied package body, lines 5626–5711.*
 
-[↑ API index](#api-index) · [← Overview](loan-tranche-api.md)
+[↑ API Index](#api-index) · [↑ Functional area](#domain-dates-and-loan-lookup)
 
 <a id="get-pym-startdate"></a>
+#### get_Pym_Startdate
 
-### get_Pym_Startdate**Function · Lookup/dates.** Finds first or next repayment date for tranche.
+**Type:** Function
+
+**Description**
+
+Finds first or next repayment date for tranche. Uses plan end/current dates, payment day/frequency, account group, loan maturity and optional closed-plan check to determine the payment start date.
 
 **Signature**
 
@@ -622,25 +840,42 @@ Function get_Pym_Startdate(p_Doc_No          In Varchar2,
     Return Date;
 ```
 
-**Business logic.** Uses plan end/current dates, payment day/frequency, account group, loan maturity and optional closed-plan check to determine the payment start date.
+**Parameters**
 
-**Data access.** `LOAN_TRANCHE_PAYMENT_PLAN`
+| Parameter | Mode | Meaning |
+|---|---|---|
+| `p_Doc_No` | IN | Loan document identifier; limits processing to the selected loan when supplied. |
+| `p_tranche_no` | IN | Tranche identifier to select or update. |
+| `p_pymt_date` | IN | Supplied Date parameter used by this operation. |
+| `p_pymt_day` | IN | Configured payment day. |
+| `p_pymt_period` | IN | Supplied Number parameter used by this operation. |
+| `p_acc_type` | IN | Account type filter or target account classification. |
+| `p_loan_end_Date` | IN | Loan maturity date. |
+| `p_check_is_closed` | IN | Whether closed payment-plan rows are considered (default Y). |
 
-**Important calls.** `glbl_faiz.days_between2`
+**Dependencies:** [Dependency register](loan-tranche-dependencies.md).
 
-**Validation and outcomes.** Refer to the implementation and calling transaction for failure handling; no explicit direct R-message extracted.
+**Errors:** [Verified business/error conditions](loan-tranche-error-handling.md).
 
-**Source location:** supplied package body, lines 5711–5815.
+*Source: supplied package body, lines 5711–5815.*
 
-[↑ API index](#api-index) · [← Overview](loan-tranche-api.md)
+[↑ API Index](#api-index) · [↑ Functional area](#domain-dates-and-loan-lookup)
 
+---
+
+<a id="domain-history-and-reversal"></a>
 ## History and reversal
 
-Tranche ledger history, logging, deletion and restoration.
+Records tranche movements and restores transaction-related state.
 
 <a id="create-tranche-history"></a>
+#### create_tranche_history
 
-### create_tranche_history**Procedure · Audit/reversal.** Records tranche movement and applies its amount deltas.
+**Type:** Procedure
+
+**Description**
+
+For `I`/`U`, inserts a row in `LOAN_TRANCHE_OPERATION_HISTORY`; for `D`, deletes matching transaction/tranche history. It then applies signed amount changes to the related `LOAN_TRANCHE_INFO` balance buckets (including MAIN, transit, INT, overdue and penalty buckets). If a principal base changes it opens/closes corresponding interest-difference tracking through `LOAN_API.loan_int_diff_operation`. Missing tranche number and unsupported transaction modes are rejected.
 
 **Signature**
 
@@ -667,21 +902,47 @@ procedure create_tranche_history(p_trn_date             in date,
                                    p_null_calc_access     in varchar2 default 'N');
 ```
 
-**Business logic.** For I/U inserts operation history; D removes matching transaction/tranche history. Updates tranche balance buckets with the passed signed deltas; errors if tranche not found. Calls loan_api.loan_int_diff_operation for changed principal, transit principal and overdue principal calculation bases.
+**Parameters**
 
-**Data access.** `GLBL_TRANSACTION`, `LOAN_TRANCHE_OPERATION_HISTORY`, `LOAN_TRANCHE_INFO`
+| Parameter | Mode | Meaning |
+|---|---|---|
+| `p_trn_date` | IN | Operation transaction date. |
+| `p_tx_fid` | IN | Transaction identifier; IN OUT when a new identifier may be returned. |
+| `p_oper_type` | IN | Operation category or operation identifier. |
+| `p_doc_no` | IN | Loan document identifier; limits processing to the selected loan when supplied. |
+| `p_tranche_no` | IN | Tranche identifier to select or update. |
+| `p_trn_type` | IN | History change mode (I/U/D) or requested operation mode. |
+| `p_eod_sod` | IN | End/start-of-day processing indicator. |
+| `p_main_amount` | IN | Supplied number parameter used by this operation. |
+| `p_main_trs_amount` | IN | Supplied number parameter used by this operation. |
+| `p_int_amount` | IN | Supplied number parameter used by this operation. |
+| `p_int_trs_amount` | IN | Supplied number parameter used by this operation. |
+| `p_ovd_main_amount` | IN | Supplied number parameter used by this operation. |
+| `p_ovd_int_amount` | IN | Supplied number parameter used by this operation. |
+| `p_ovd_calc_int_amount` | IN | Supplied number parameter used by this operation. |
+| `p_trs_calc_int_amount` | IN | Supplied number parameter used by this operation. |
+| `p_pen_main_amount` | IN | Supplied number parameter used by this operation. |
+| `p_int_virt_amount` | IN | Supplied number parameter used by this operation. |
+| `p_LP_MAIN_AMOUNT` | IN | Supplied number parameter used by this operation. |
+| `p_pen_main_amount_real` | IN | Supplied number parameter used by this operation. |
+| `p_null_calc_access` | IN | Supplied varchar2 parameter used by this operation. |
 
-**Important calls.** `loan_api.loan_int_diff_operation`
+**Dependencies:** [Dependency register](loan-tranche-dependencies.md).
 
-**Validation and outcomes.** Transaction with tx_fid: ; error encountered in search of tx_fid in glbl_transaction table!; Tranche_no: ; p_trn_type must be I-insert, U-update, D-delete!
+**Errors:** [Verified business/error conditions](loan-tranche-error-handling.md).
 
-**Source location:** supplied package body, lines 703–967.
+*Source: supplied package body, lines 703–967.*
 
-[↑ API index](#api-index) · [← Overview](loan-tranche-api.md)
+[↑ API Index](#api-index) · [↑ Functional area](#domain-history-and-reversal)
 
 <a id="table-log-operation"></a>
+#### table_log_operation
 
-### table_log_operation**Procedure · Audit/reversal.** Snapshots or restores tranche records.
+**Type:** Procedure
+
+**Description**
+
+Snapshots or restores tranche records. LOGGING saves tranche master or payment-plan rows into associated _LOG tables linked to transaction. RESTORING reconstructs prior data from logs for document/tranche/table; validates operation mode and transaction ID.
 
 **Signature**
 
@@ -693,21 +954,32 @@ procedure table_log_operation(p_doc_no     in varchar2,
                                 p_oper_type  in varchar2);
 ```
 
-**Business logic.** LOGGING saves tranche master or payment-plan rows into associated _LOG tables linked to transaction. RESTORING reconstructs prior data from logs for document/tranche/table; validates operation mode and transaction ID.
+**Parameters**
 
-**Data access.** `LOAN_TRANCHE_PAYMENT_PLAN_LOG`, `LOAN_TRANCHE_PAYMENT_PLAN`, `LOAN_TRANCHE_INFO_LOG`, `LOAN_TRANCHE_INFO`
+| Parameter | Mode | Meaning |
+|---|---|---|
+| `p_doc_no` | IN | Loan document identifier; limits processing to the selected loan when supplied. |
+| `p_tranche_no` | IN | Tranche identifier to select or update. |
+| `p_table_name` | IN | Tranche table selected for logging or restoring. |
+| `p_tx_fid` | IN | Transaction identifier; IN OUT when a new identifier may be returned. |
+| `p_oper_type` | IN | Operation category or operation identifier. |
 
-**Important calls.** No cross-package call extracted.
+**Dependencies:** [Dependency register](loan-tranche-dependencies.md).
 
-**Validation and outcomes.** when use [table_log_operation] , [p_tx_fid](; Oper type should be LOGGING-for logging or RESTORING-for restoring
+**Errors:** [Verified business/error conditions](loan-tranche-error-handling.md).
 
-**Source location:** supplied package body, lines 2969–3124.
+*Source: supplied package body, lines 2969–3124.*
 
-[↑ API index](#api-index) · [← Overview](loan-tranche-api.md)
+[↑ API Index](#api-index) · [↑ Functional area](#domain-history-and-reversal)
 
 <a id="delete-tranche"></a>
+#### delete_tranche
 
-### delete_tranche**Procedure · Audit/reversal.** Deletes transaction-associated tranche details.
+**Type:** Procedure
+
+**Description**
+
+Deletes transaction-associated tranche details. Short delete helper used within the recovery path; evaluate together with do_delete_operation and logging for full reversal effects.
 
 **Signature**
 
@@ -715,21 +987,28 @@ procedure table_log_operation(p_doc_no     in varchar2,
 procedure delete_tranche(p_tx_fid number);
 ```
 
-**Business logic.** Short delete helper used within the recovery path; evaluate together with do_delete_operation and logging for full reversal effects.
+**Parameters**
 
-**Data access.** No direct table access confirmed in this method.
+| Parameter | Mode | Meaning |
+|---|---|---|
+| `p_tx_fid` | IN | Transaction identifier; IN OUT when a new identifier may be returned. |
 
-**Important calls.** No cross-package call extracted.
+**Dependencies:** [Dependency register](loan-tranche-dependencies.md).
 
-**Validation and outcomes.** Refer to the implementation and calling transaction for failure handling; no explicit direct R-message extracted.
+**Errors:** [Verified business/error conditions](loan-tranche-error-handling.md).
 
-**Source location:** supplied package body, lines 3973–3982.
+*Source: supplied package body, lines 3973–3982.*
 
-[↑ API index](#api-index) · [← Overview](loan-tranche-api.md)
+[↑ API Index](#api-index) · [↑ Functional area](#domain-history-and-reversal)
 
 <a id="do-delete-operation"></a>
+#### do_delete_operation
 
-### do_delete_operation**Procedure · Audit/reversal.** Reverses tranche operation by transaction ID.
+**Type:** Procedure
+
+**Description**
+
+Reverses tranche operation by transaction ID. Uses tranche master/plan snapshot logs and history rows to restore previous state and reverse transaction-linked movements; delegates deletion where appropriate.
 
 **Signature**
 
@@ -737,25 +1016,35 @@ procedure delete_tranche(p_tx_fid number);
 procedure do_delete_operation(p_tx_fid number);
 ```
 
-**Business logic.** Uses tranche master/plan snapshot logs and history rows to restore previous state and reverse transaction-linked movements; delegates deletion where appropriate.
+**Parameters**
 
-**Data access.** `LOAN_TRANCHE_PAYMENT_PLAN_LOG`, `LOAN_TRANCHE_INFO_LOG`, `LOAN_TRANCHE_OPERATION_HISTORY`
+| Parameter | Mode | Meaning |
+|---|---|---|
+| `p_tx_fid` | IN | Transaction identifier; IN OUT when a new identifier may be returned. |
 
-**Important calls.** `loan_tranche_api.create_tranche_history`, `loan_tranche_api.delete_tranche`
+**Dependencies:** [Dependency register](loan-tranche-dependencies.md).
 
-**Validation and outcomes.** Refer to the implementation and calling transaction for failure handling; no explicit direct R-message extracted.
+**Errors:** [Verified business/error conditions](loan-tranche-error-handling.md).
 
-**Source location:** supplied package body, lines 5565–5626.
+*Source: supplied package body, lines 5565–5626.*
 
-[↑ API index](#api-index) · [← Overview](loan-tranche-api.md)
+[↑ API Index](#api-index) · [↑ Functional area](#domain-history-and-reversal)
 
+---
+
+<a id="domain-integration-and-validation"></a>
 ## Integration and validation
 
-APEX view integration and tranche plan consistency checks.
+Exposes APEX data and validates tranche repayment-plan consistency.
 
 <a id="apex-krd2204-2-view"></a>
+#### apex_krd2204_2_view
 
-### apex_krd2204_2_view**Function · APEX/allocation.** Provides pipelined account/balance rows for APEX.
+**Type:** Function
+
+**Description**
+
+Provides pipelined account/balance rows for APEX. Projects tranche balances into loan_api.g_loan_accounts_tab records, mapping account types by status; output is pipelined so SQL clients can consume table rows.
 
 **Signature**
 
@@ -764,21 +1053,26 @@ FUNCTION apex_krd2204_2_view RETURN loan_api.g_loan_accounts_tab
     PIPELINED;
 ```
 
-**Business logic.** Projects tranche balances into loan_api.g_loan_accounts_tab records, mapping account types by status; output is pipelined so SQL clients can consume table rows.
+**Parameters**
 
-**Data access.** `LOAN_TRANCHE_INFO`
+No parameters.
 
-**Important calls.** `loan_api.get_acc_type_by_status`, `loan_api.g_loan_accounts_rec_type`
+**Dependencies:** [Dependency register](loan-tranche-dependencies.md).
 
-**Validation and outcomes.** Refer to the implementation and calling transaction for failure handling; no explicit direct R-message extracted.
+**Errors:** [Verified business/error conditions](loan-tranche-error-handling.md).
 
-**Source location:** supplied package body, lines 2693–2765.
+*Source: supplied package body, lines 2693–2765.*
 
-[↑ API index](#api-index) · [← Overview](loan-tranche-api.md)
+[↑ API Index](#api-index) · [↑ Functional area](#domain-integration-and-validation)
 
 <a id="get-plan-error"></a>
+#### get_plan_error
 
-### get_plan_error**Function · Validation.** Returns payment-plan validation diagnostics.
+**Type:** Function
+
+**Description**
+
+Examines tranche plan consistency and accumulates diagnostic text, rather than changing the schedule. It reads loan and schedule details, compares tranche amounts with plan balances, uses configurable `MAX_INT_DIFF_CORR_AMOUNT` and stop/flow rate intervals for interest comparisons, and returns the combined errors when checks fail. Its local `add_error` logic stops appending after reaching its error-count threshold.
 
 **Signature**
 
@@ -789,21 +1083,30 @@ function get_plan_error(p_doc_no     varchar2,
     return varchar2;
 ```
 
-**Business logic.** Checks loan, base schedule, tranche balances and scheduled amounts/dates, with interest differences and stop/flow rate intervals. Uses MAX_INT_DIFF_CORR_AMOUNT configuration and collects numbered messages instead of raising them directly.
+**Parameters**
 
-**Data access.** No direct table access confirmed in this method.
+| Parameter | Mode | Meaning |
+|---|---|---|
+| `p_doc_no` | IN | Loan document identifier; limits processing to the selected loan when supplied. |
+| `p_check_type` | IN | Controls the scope of repayment-plan validation (default ALL). |
+| `p_date` | IN | Effective processing date (default: logical system date where declared). |
 
-**Important calls.** `loan_api.get_gl_value`
+**Dependencies:** [Dependency register](loan-tranche-dependencies.md).
 
-**Validation and outcomes.** Refer to the implementation and calling transaction for failure handling; no explicit direct R-message extracted.
+**Errors:** [Verified business/error conditions](loan-tranche-error-handling.md).
 
-**Source location:** supplied package body, lines 5815–5842.
+*Source: supplied package body, lines 5815–5842.*
 
-[↑ API index](#api-index) · [← Overview](loan-tranche-api.md)
+[↑ API Index](#api-index) · [↑ Functional area](#domain-integration-and-validation)
 
 <a id="do-plan-control"></a>
+#### do_plan_control
 
-### do_plan_control**Procedure · Validation.** Enforces payment-plan validity.
+**Type:** Procedure
+
+**Description**
+
+Calls `get_plan_error(p_document_no, p_check_type, p_date)` to obtain repayment-plan diagnostics. When the returned message is not null, raises it with `R`; otherwise exits without changing the schedule. Unlike the similarly named `LOAN_API` procedure, **this implementation contains no `LOAN_EOD_CONTROL_EXP` exclusion check**.
 
 **Signature**
 
@@ -813,15 +1116,19 @@ procedure do_plan_control(p_document_no in varchar2,
                             p_date        date default glbl.getsysdate);
 ```
 
-**Business logic.** Calls get_plan_error for the specified loan/check type/date and raises returned error text when nonempty.
+**Parameters**
 
-**Data access.** No direct table access confirmed in this method.
+| Parameter | Mode | Meaning |
+|---|---|---|
+| `p_document_no` | IN | Loan document identifier to validate. |
+| `p_check_type` | IN | Controls the scope of repayment-plan validation (default ALL). |
+| `p_date` | IN | Effective processing date (default: logical system date where declared). |
 
-**Important calls.** No cross-package call extracted.
+**Dependencies:** [Dependency register](loan-tranche-dependencies.md).
 
-**Validation and outcomes.** Refer to the implementation and calling transaction for failure handling; no explicit direct R-message extracted.
+**Errors:** [Verified business/error conditions](loan-tranche-error-handling.md).
 
-**Source location:** supplied package body, lines 6481–6494.
+*Source: supplied package body, lines 6481–6494.*
 
-[↑ API index](#api-index) · [← Overview](loan-tranche-api.md)
+[↑ API Index](#api-index) · [↑ Functional area](#domain-integration-and-validation)
 
